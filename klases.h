@@ -3,10 +3,16 @@
 #include <string>
 #include <vector>
 #include <unordered_map>
+#include <ctime> // paprasčiau
 #include "maisa.h"
 
 using Hash = std::vector<std::uint8_t>; // dīgi muzīlai boūt std::array<std::uint8_t, 32>
 using Money = std::uint32_t;
+
+// KONSTANTOS
+
+constexpr std::uint32_t Version = 1;
+constexpr std::uint32_t Difficulty = 3; // pirmi 3 — nuliai
 
 // TRANSAKCIJOS
 
@@ -33,19 +39,54 @@ public:
 
 class BlockHeader
 {
+    Hash prev_hash_;
+    std::uint64_t timestamp_;
+    std::uint32_t version_;
+    Hash tx_root_;
+    std::uint64_t nonce_;
+    std::uint32_t difficulty_; // kiek nulių pradžioj
+
 public:
-    Hash prev_hash;
-    std::uint64_t timestamp;
-    std::uint32_t version;
-    Hash tx_root;
-    std::uint64_t nonce;
-    std::uint32_t difficulty; // kiek nulių pradžioj
+    BlockHeader(
+        Hash prev_hash,
+        std::uint64_t timestamp,
+        std::uint32_t version,
+        Hash tx_root,
+        std::uint64_t nonce,
+        std::uint32_t difficulty // kiek nulių pradžioj
+        ) : prev_hash_(prev_hash), timestamp_(timestamp), version_(version), tx_root_(tx_root), nonce_(nonce), difficulty_(difficulty)
+    {
+    }
 };
 
 class Block
 {
-    BlockHeader header;
-    std::vector<Transaction> transactions; // šjp bus Merkle Tree struktūra
+    BlockHeader header_;
+    std::vector<Transaction> transactions_; // šjp bus Merkle Tree struktūra
+
+public:
+    Block(BlockHeader header, std::vector<Transaction> transactions) : header_(header), transactions_(transactions) {}
+};
+
+class Blockchain
+{
+    std::vector<Block> chain_;
+
+public:
+    Blockchain() // konstruktorius, iškart sukuria ir genesis block
+    {
+        BlockHeader block_header(
+            Hash(32, 0),  // 32 nulių vektorius
+            std::time(0), // time(0) grąžina dab. laiką, išreikštą sekundėm nuo 1970-01-01
+            Version,
+            str_i_hasha(" "),
+            0,
+            Difficulty);
+        Block genesis_block(block_header, std::vector<Transaction>()); // paduodam tuščią transakcijų vektorių
+        chain_.push_back(genesis_block);
+    }
+
+    // BLOKO PRIDĖJIMAS ... (reiks papildomos logikos — gaut prev_hash)
 };
 
 // USER

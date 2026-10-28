@@ -11,5 +11,8 @@ int main()
 
     std::vector<Transaction> mempool = generate_txs(10000, 10, 10000, users, generator); // tyčia netikrinama, susigeneruos ir klaidingų transakcijų (pvz. turi 100 bet moka 1000)
 
+    // blockchaino pradžia (konstruktorius iškart sukuria ir genesis bloką)
+    Blockchain blockchain;
+
     return 0;
 }
