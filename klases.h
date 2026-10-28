@@ -1,8 +1,10 @@
 #include <array>
 #include <string>
 #include <vector>
+#include <unordered_map>
 
 using Hash = std::array<std::uint8_t, 32>;
+using Money = std::uint32_t;
 
 class Transaction
 {
@@ -29,4 +31,34 @@ class Block
 {
     BlockHeader header;
     std::vector<Transaction> transactions; // šjp bus Merkle Tree struktūra
+};
+
+// USER
+
+class User
+{
+    std::string name_;
+    std::string public_key_;
+
+public:
+    User(std::string name, std::string public_key) : name_(name), public_key_(public_key) {}
+
+    std::string name()
+    {
+        return name_;
+    }
+
+    std::string public_key()
+    {
+        return public_key_;
+    }
+};
+
+// ACCOUNT BALANCES
+
+class AccountBalances
+{
+    std::unordered_map<std::string, Money> account_balances;
+
+    // public: ...
 };
