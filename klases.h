@@ -71,9 +71,15 @@ public:
 class Blockchain
 {
     std::vector<Block> chain_;
+    std::vector<User> &users_; // balansam, siuntėjam/gavėjam tikrint; Nuoroda users vektoriun main() funkcijoj
 
 public:
-    Blockchain() // konstruktorius, iškart sukuria ir genesis block
+    Blockchain(std::vector<User> &users) : users_(users) // konstruktorius, sukuria users nuorodą ir sukuria genesis block
+    {
+        chain_.push_back(create_genesis_block());
+    }
+
+    Block create_genesis_block()
     {
         BlockHeader block_header(
             Hash(32, 0),  // 32 nulių vektorius
@@ -83,10 +89,19 @@ public:
             0,
             Difficulty);
         Block genesis_block(block_header, std::vector<Transaction>()); // paduodam tuščią transakcijų vektorių
-        chain_.push_back(genesis_block);
+
+        return genesis_block;
     }
 
-    // BLOKO PRIDĖJIMAS ... (reiks papildomos logikos — gaut prev_hash)
+    bool validateBlock(Block block)
+    {
+        // visa logika...
+    }
+
+    void append(Block block)
+    {
+        // pirma validate tada pridėt
+    }
 };
 
 // USER
