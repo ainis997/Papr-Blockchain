@@ -1,3 +1,5 @@
+#pragma once
+
 #include <string>
 #include <vector>
 #include <unordered_map>
@@ -5,6 +7,8 @@
 
 using Hash = std::vector<std::uint8_t>; // dīgi muzīlai boūt std::array<std::uint8_t, 32>
 using Money = std::uint32_t;
+
+// TRANSAKCIJOS
 
 class Transaction
 {
@@ -24,6 +28,8 @@ public:
         transaction_id_ = str_i_hasha(sender + "|" + receiver + "|" + std::to_string(amount) + "|" + std::to_string(sequence));
     }
 };
+
+// BLOKAI
 
 class BlockHeader
 {
@@ -48,9 +54,12 @@ class User
 {
     std::string name_;
     std::string public_key_;
+    Money balance_;
 
 public:
-    User(std::string name, std::string public_key) : name_(name), public_key_(public_key) {}
+    User(std::string &name, std::string &public_key) : name_(name), public_key_(public_key) {}
+
+    User(std::string &name, std::string &public_key, Money balance) : name_(name), public_key_(public_key), balance_(balance) {}
 
     std::string name()
     {
@@ -61,13 +70,18 @@ public:
     {
         return public_key_;
     }
+
+    Money balance()
+    {
+        return balance_;
+    }
 };
 
-// ACCOUNT BALANCES
+// // ACCOUNT BALANCES
 
-class AccountBalances
-{
-    std::unordered_map<std::string, Money> account_balances;
+// class AccountBalances
+// {
+//     std::unordered_map<std::string, Money> account_balances;
 
-    // public: ...
-};
+//     // public: ...
+// };
