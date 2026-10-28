@@ -14,16 +14,16 @@ class Transaction
 {
     std::string sender_;
     std::string receiver_;
-    std::uint32_t amount_;   // unsigned, bo neneigiamas
-    std::uint64_t sequence_; // transakcijos eilės numeris (naudinga pvz. jei yra dvi+ tokios pačios transakcijos — kad skirtųsi id ir pan.)
+    Money amount_;         // unsigned, bo neneigiamas
+    std::size_t sequence_; // transakcijos eilės numeris (naudinga pvz. jei yra dvi+ tokios pačios transakcijos — kad skirtųsi id ir pan.)
     Hash transaction_id_;
 
 public:
     Transaction(
         std::string sender,
         std::string receiver,
-        std::uint32_t amount,
-        std::uint64_t sequence) : sender_(sender), receiver_(receiver), amount_(amount), sequence_(sequence)
+        Money amount,
+        std::size_t sequence) : sender_(sender), receiver_(receiver), amount_(amount), sequence_(sequence)
     {
         transaction_id_ = str_i_hasha(sender + "|" + receiver + "|" + std::to_string(amount) + "|" + std::to_string(sequence));
     }
