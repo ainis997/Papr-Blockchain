@@ -4,6 +4,8 @@
 #include "vartotojai.h"
 #include "konstantos.h"
 
+Hash get_tx_id(std::string &sender, std::string &receiver, Money amount, std::size_t sequence);
+
 class Transaction
 {
     std::string sender_;
@@ -19,7 +21,7 @@ public:
         Money amount,
         std::size_t sequence) : sender_(sender), receiver_(receiver), amount_(amount), sequence_(sequence)
     {
-        transaction_id_ = str_i_hasha(sender + "|" + receiver + "|" + std::to_string(amount) + "|" + std::to_string(sequence));
+        transaction_id_ = get_tx_id(sender, receiver, amount, sequence);
     }
 
     std::string sender()
@@ -58,6 +60,8 @@ public:
     Mempool(Users &users) : users_(users) {};
 
     Mempool(Users &users, std::size_t num, Money min_amount, Money max_amount, std::mt19937 &generator);
+
+    std::size_t valid_txs_remaining();
 
     std::vector<Transaction> collect_txs(std::size_t max_n, std::mt19937 &generator);
 };

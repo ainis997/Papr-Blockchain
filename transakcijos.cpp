@@ -3,6 +3,11 @@
 
 #include "transakcijos.h"
 
+Hash get_tx_id(std::string &sender, std::string &receiver, Money amount, std::size_t sequence)
+{
+    return str_i_hasha(sender + "|" + receiver + "|" + std::to_string(amount) + "|" + std::to_string(sequence));
+}
+
 Mempool::Mempool(Users &users, std::size_t num, Money min_amount, Money max_amount, std::mt19937 &generator) : users_(users)
 {
     mempool_.reserve(num);
@@ -26,6 +31,36 @@ Mempool::Mempool(Users &users, std::size_t num, Money min_amount, Money max_amou
 
         mempool_.push_back(Transaction(sender, receiver, amount, i + 1));
     }
+}
+
+std::size_t Mempool::valid_txs_remaining()
+{
+    std::size_t valid_txs_n = 0;
+    for (Transaction &tx : mempool_)
+    {
+        // siuntėjo gavėjo egzistavimas
+        User sender_user;
+        User receiver_user;
+        try
+        {
+            // jeigu bus neegzistuojantis vartotojas, mes errorą
+            sender_user = users_.at(users_.get_user_idx_by_name(tx.sender()));
+            receiver_user = users_.at(users_.get_user_idx_by_name(tx.receiver()));
+        }
+        catch (std::runtime_error &e)
+        {
+            continue;
+        }
+        // siuntėjo būsimo balanso po transakcijos tikrinimas
+        int new_balance = static_cast<int>(sender_user.balance()) - static_cast<int>(tx.amount());
+        if (new_balance < 0)
+        {
+            continue;
+        }
+        // jeigu validus
+        ++valid_txs_n;
+    }
+    return valid_txs_n;
 }
 
 std::vector<Transaction> Mempool::collect_txs(std::size_t max_n, std::mt19937 &generator)

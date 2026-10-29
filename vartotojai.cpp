@@ -19,7 +19,7 @@ Users::Users(std::uint32_t num, Money min_balance, Money max_balance, std::mt199
     }
 }
 
-std::size_t Users::get_user_idx_by_name(std::string &name)
+std::size_t Users::get_user_idx_by_name(std::string name)
 {
     for (auto i = 0; i < users_.size(); ++i)
     {

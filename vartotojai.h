@@ -58,5 +58,5 @@ public:
     }
 
     // jeigu būtų besikartojančių vardų (nors neturėtų būt), tai rastų tik pirmąjį tokiu vardu
-    std::size_t get_user_idx_by_name(std::string &name);
+    std::size_t get_user_idx_by_name(std::string name);
 };

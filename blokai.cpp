@@ -1,7 +1,9 @@
 #include <stdexcept>
+#include <algorithm>
 
 #include "blokai.h"
 #include "pagalb_fjos.h"
+#include "transakcijos.h"
 
 // BlockHeader
 
@@ -49,4 +51,44 @@ Hash Blockchain::get_last_block_hash()
     if (chain_.size() == 0)
         return Hash(32, 0);                           // neaktualu
     return chain_.at(chain_.size() - 1).block_hash(); // iškviečiam paskutinio blockchaino blokui .block_hash() metodą, kad gaut to bloko hashą
+}
+
+bool Blockchain::is_block_valid(Block block) // nors tikrinimą darys ir mineris (prieš sukurdamas kandidatinį bloką), bet reik daryt ir galutinį pertikrinimą prieš patį pridėjimą
+{
+    // hasho validumas
+
+    if (!is_valid_hash(block.block_hash()))
+        return false;
+
+    // pačios transakcijos
+
+    for (auto &tx : block.transactions())
+    {
+        // siuntėjo gavėjo egzistavimas
+        User sender_user;
+        User receiver_user;
+        try
+        {
+            // jeigu bus neegzistuojantis vartotojas, mes errorą
+            sender_user = users_.at(users_.get_user_idx_by_name(tx.sender()));
+            receiver_user = users_.at(users_.get_user_idx_by_name(tx.receiver()));
+        }
+        catch (std::runtime_error &e)
+        {
+            return false;
+        }
+        // siuntėjo būsimo balanso po transakcijos tikrinimas
+        int new_balance = static_cast<int>(sender_user.balance()) - static_cast<int>(tx.amount());
+        if (new_balance < 0)
+        {
+            return false;
+        }
+    }
+
+    // headeris
+
+    if (block.prev_hash() != get_last_block_hash())
+        return false;
+
+    return true;
 }

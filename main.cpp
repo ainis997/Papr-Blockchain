@@ -26,7 +26,8 @@ int main()
     std::cout << "kasimo pradzia\n";
 
     // kasimas
-    while (!is_valid_hash(candidate_block.block_hash()))
+    Hash validhash;
+    while (!is_valid_hash(validhash = candidate_block.block_hash()))
     {
         candidate_block.incr_nonce();
     }
@@ -34,6 +35,7 @@ int main()
     Hash valid_hash = candidate_block.block_hash();
 
     std::cout << "maisa: " << to_hex(valid_hash) << '\n';
+    std::cout << "maisa: " << to_hex(validhash) << '\n';
 
     return 0;
 }

@@ -46,9 +46,39 @@ public:
               transactions) {}
     // transakcijos bus pertikrinamos pas blockchain prieš pridedant transakciją jan
 
+    Hash prev_hash()
+    {
+        return header_.prev_hash_;
+    }
+
+    std::uint64_t timestamp()
+    {
+        return header_.timestamp_;
+    }
+
+    std::uint32_t version()
+    {
+        return header_.version_;
+    }
+
+    Hash tx_root()
+    {
+        return header_.tx_root_;
+    }
+
+    std::uint64_t nonce()
+    {
+        return header_.nonce_;
+    }
+
     std::uint32_t difficulty()
     {
         return header_.difficulty_;
+    }
+
+    std::vector<Transaction> transactions()
+    {
+        return transactions_;
     }
 
     Hash block_hash();
@@ -74,13 +104,13 @@ public:
 
     Hash get_last_block_hash();
 
-    // bool validateBlock(Block block) // nors tikrinimą darys ir mineris (prieš sukurdamas kandidatinį bloką), bet reik daryt ir galutinį pertikrinimą prieš patį pridėjimą
-    // {
-    //     // visa logika...
-    // }
+    bool is_block_valid(Block block); // nors tikrinimą darys ir mineris (prieš sukurdamas kandidatinį bloką), bet reik daryt ir galutinį pertikrinimą prieš patį pridėjimą
 
-    // void append(Block block)
-    // {
-    //     // pirma validate tada pridėt
-    // }
+    void append(Block block)
+    {
+        if (is_block_valid(block))
+        {
+            chain_.push_back(block);
+        }
+    }
 };
