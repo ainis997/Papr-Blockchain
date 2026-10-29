@@ -81,6 +81,11 @@ public:
         return transactions_;
     }
 
+    std::size_t num_transactions()
+    {
+        return transactions_.size();
+    }
+
     Hash block_hash();
 
     void incr_nonce()
@@ -106,11 +111,20 @@ public:
 
     bool is_block_valid(Block block); // nors tikrinimą darys ir mineris (prieš sukurdamas kandidatinį bloką), bet reik daryt ir galutinį pertikrinimą prieš patį pridėjimą
 
-    void append(Block block)
+    bool append(Block block)
     {
         if (is_block_valid(block))
         {
             chain_.push_back(block);
+            return true;
         }
+        return false;
     }
+
+    std::size_t height()
+    {
+        return chain_.size();
+    }
+
+    void present_block_data(std::size_t idx);
 };

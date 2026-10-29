@@ -1,5 +1,6 @@
 #include <random>
 #include <iostream>
+#include <chrono>
 
 #include "blokai.h"
 #include "pagalb_fjos.h"
@@ -16,26 +17,42 @@ int main()
     // blockchaino pradžia (konstruktorius iškart sukuria ir genesis bloką)
     Blockchain blockchain(users);
 
-    // atsirenkam iki 100 valid transakcijų
-    std::vector<Transaction> candidate_txs = mempool.collect_txs(100, generator);
-
-    // kandidatinio bloko sukūrimas
-    Hash prev_hash = blockchain.get_last_block_hash();
-    Block candidate_block(prev_hash, candidate_txs);
-
-    std::cout << "kasimo pradzia\n";
-
-    // kasimas
-    Hash validhash;
-    while (!is_valid_hash(validhash = candidate_block.block_hash()))
+    while (mempool.valid_txs_remaining() > 0)
     {
-        candidate_block.incr_nonce();
+        // atsirenkam iki 100 valid transakcijų
+        std::vector<Transaction> candidate_txs = mempool.collect_txs(100, generator);
+
+        // kandidatinio bloko sukūrimas
+        Hash prev_hash = blockchain.get_last_block_hash();
+        Block candidate_block(prev_hash, candidate_txs);
+
+        // kasimas
+        Hash valid_hash;
+        std::size_t attempts = 1; // pirmas bandymas — įeinant while ciklan
+        auto mining_start = std::chrono::high_resolution_clock::now();
+        while (!is_valid_hash(valid_hash = candidate_block.block_hash()))
+        {
+            candidate_block.incr_nonce();
+            ++attempts;
+        }
+        auto mining_end = std::chrono::high_resolution_clock::now();
+        std::chrono::duration<double> dur = mining_end - mining_start;
+        double duration = dur.count();
+
+        bool ar_blokas_pridetas = blockchain.append(candidate_block);
+        if (!ar_blokas_pridetas)
+            continue; // cancel, per naują kandidatuot
+
+        // SUMAŽINT MEMPOOL
+        //
+
+        // ATNAUJINT BALANSUS
+        //
+
+        blockchain.present_block_data(blockchain.height() - 1); // pridėtasis blokas — paskutinis
+        // papildomai pridedam nes pats blockchain nemato
+        std::cout << "Attempts: " << attempts << "\nMining duration: " << duration << " s\n";
     }
-
-    Hash valid_hash = candidate_block.block_hash();
-
-    std::cout << "maisa: " << to_hex(valid_hash) << '\n';
-    std::cout << "maisa: " << to_hex(validhash) << '\n';
 
     return 0;
 }

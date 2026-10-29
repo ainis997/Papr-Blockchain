@@ -1,5 +1,6 @@
 #include <stdexcept>
 #include <algorithm>
+#include <iostream>
 
 #include "blokai.h"
 #include "pagalb_fjos.h"
@@ -91,4 +92,20 @@ bool Blockchain::is_block_valid(Block block) // nors tikrinimą darys ir mineris
         return false;
 
     return true;
+}
+
+void Blockchain::present_block_data(std::size_t idx)
+{
+    if (idx >= chain_.size())
+        return;
+
+    Block block = chain_.at(idx);
+    std::cout << "\n"
+              << "height: " << idx << '\n'
+              << "transactions: " << block.num_transactions() << '\n'
+              << "prev_hash: " << to_hex(block.prev_hash()) << '\n'
+              << "tx_root: " << to_hex(block.tx_root()) << '\n'
+              << "hash: " << to_hex(block.block_hash()) << '\n'
+              << "difficulty: " << block.difficulty() << '\n'
+              << "nonce: " << block.nonce() << '\n';
 }

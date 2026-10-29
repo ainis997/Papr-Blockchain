@@ -17,3 +17,4 @@ Hash calc_tx_root(std::vector<Transaction> &txs);
 bool is_valid_hash(Hash hash);
 
 std::string to_hex(std::vector<std::uint8_t> &baitai);
+std::string to_hex(std::vector<std::uint8_t> &&baitai);

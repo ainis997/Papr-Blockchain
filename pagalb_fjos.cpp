@@ -104,3 +104,16 @@ std::string to_hex(std::vector<std::uint8_t> &baitai)
 
     return oss.str();
 }
+// rvalue parametro perdengimas
+std::string to_hex(std::vector<std::uint8_t> &&baitai)
+{
+    std::ostringstream oss;
+    oss << std::hex; // tai lieka kaip nustatymas
+    for (std::uint8_t baitas : baitai)
+    {
+        oss << std::setfill('0') << std::setw(2) << static_cast<int>(baitas);
+    }
+    oss << std::dec << '\n';
+
+    return oss.str();
+}
