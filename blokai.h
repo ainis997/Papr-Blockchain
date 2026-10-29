@@ -46,7 +46,17 @@ public:
               transactions) {}
     // transakcijos bus pertikrinamos pas blockchain prieš pridedant transakciją jan
 
+    std::uint32_t difficulty()
+    {
+        return header_.difficulty_;
+    }
+
     Hash block_hash();
+
+    void incr_nonce()
+    {
+        ++header_.nonce_;
+    }
 };
 
 class Blockchain

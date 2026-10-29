@@ -1,4 +1,6 @@
 #include <random>
+#include <iostream>
+
 #include "blokai.h"
 #include "pagalb_fjos.h"
 
@@ -20,6 +22,18 @@ int main()
     // kandidatinio bloko sukūrimas
     Hash prev_hash = blockchain.get_last_block_hash();
     Block candidate_block(prev_hash, candidate_txs);
+
+    std::cout << "kasimo pradzia\n";
+
+    // kasimas
+    while (!is_valid_hash(candidate_block.block_hash()))
+    {
+        candidate_block.incr_nonce();
+    }
+
+    Hash valid_hash = candidate_block.block_hash();
+
+    std::cout << "maisa: " << to_hex(valid_hash) << '\n';
 
     return 0;
 }

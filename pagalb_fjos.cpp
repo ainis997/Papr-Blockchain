@@ -1,3 +1,7 @@
+#include <iostream>
+#include <iomanip>
+#include <sstream>
+
 #include "pagalb_fjos.h"
 #include "blokai.h"
 
@@ -68,7 +72,8 @@ Hash calc_tx_root(std::vector<Transaction> &txs)
     std::vector<std::uint8_t> bytes; // surinksim visų transaction_id baitus (transaction_id — hashas)
     for (Transaction &tx : txs)
     {
-        bytes.insert(bytes.end(), tx.transaction_id().begin(), tx.transaction_id().end());
+        Hash id = tx.transaction_id();
+        bytes.insert(bytes.end(), id.begin(), id.end());
     }
     if (bytes.empty()) // genesis blokui
     {
@@ -79,4 +84,23 @@ Hash calc_tx_root(std::vector<Transaction> &txs)
         tx_root = gaut_256bit_hasha(baitus_sujungt_po_4(std::move(bytes)));
     }
     return tx_root;
+}
+
+// koleikas hardcoded trijų tikrinimas
+bool is_valid_hash(Hash hash) // dėl spartos netikrina ar hashas tinkamas — ar yra 32 baitų
+{
+    return hash.size() >= 2 && hash[0] == 0x00 && (hash[1] & 0xF0) == 0x00; // hash[1] & 0xF0 tikrina ar antrojo baito (hash[1] svarbesnioji pusė lygi 0 === ar trečias hasho skaitmuo == 0)
+}
+
+std::string to_hex(std::vector<std::uint8_t> &baitai)
+{
+    std::ostringstream oss;
+    oss << std::hex; // tai lieka kaip nustatymas
+    for (std::uint8_t baitas : baitai)
+    {
+        oss << std::setfill('0') << std::setw(2) << static_cast<int>(baitas);
+    }
+    oss << std::dec << '\n';
+
+    return oss.str();
 }

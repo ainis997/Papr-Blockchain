@@ -5,8 +5,7 @@
 
 Users::Users(std::uint32_t num, Money min_balance, Money max_balance, std::mt19937 &generator) // sugeneruot num userių
 {
-    std::vector<User> users;
-    users.reserve(num);
+    users_.reserve(num);
 
     // balansui
     std::uniform_int_distribution<Money> dist(min_balance, max_balance);
@@ -16,7 +15,7 @@ Users::Users(std::uint32_t num, Money min_balance, Money max_balance, std::mt199
         std::string name = "User" + (i + 1);
         std::string public_key = generate_random_string(64, "0123456789abcdef", generator);
         Money balance = dist(generator);
-        users.push_back(User(name, public_key, balance));
+        users_.push_back(User(name, public_key, balance));
     }
 }
 

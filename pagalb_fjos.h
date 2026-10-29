@@ -13,3 +13,7 @@ std::string generate_random_string(const std::size_t length, const std::string &
 // std::vector<Transaction> generate_txs(std::size_t num, Money min_amount, Money max_amount, std::vector<User> &users, std::mt19937 &generator);
 
 Hash calc_tx_root(std::vector<Transaction> &txs);
+
+bool is_valid_hash(Hash hash);
+
+std::string to_hex(std::vector<std::uint8_t> &baitai);
