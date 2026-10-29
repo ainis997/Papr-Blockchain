@@ -4,6 +4,8 @@
 #include <vector>
 #include <unordered_map>
 #include <ctime> // paprasčiau
+#include <exception>
+#include <algorithm>
 #include "maisa.h"
 
 using Hash = std::vector<std::uint8_t>; // dīgi muzīlai boūt std::array<std::uint8_t, 32>
@@ -33,17 +35,43 @@ public:
     {
         transaction_id_ = str_i_hasha(sender + "|" + receiver + "|" + std::to_string(amount) + "|" + std::to_string(sequence));
     }
+
+    std::string sender()
+    {
+        return sender_;
+    }
+
+    std::string receiver()
+    {
+        return receiver_;
+    }
+
+    Money amount()
+    {
+        return amount_;
+    }
+
+    std::size_t sequence()
+    {
+        return sequence_;
+    }
+
+    Hash transaction_id()
+    {
+        return transaction_id_;
+    }
 };
 
 class Mempool
 {
     std::vector<Transaction> mempool_;
-    std::vector<User> &users_;
+    Users &users_;
+    // std::vector<std::vector<std::size_t>> candidate_txs_idxs_; // sąrašai transakcijų, kurios pasirinktos kandidatam blokam, indeksų (vienas vektorius — vienas kandidat. blokų transakcijų rinkinys)
 
 public:
-    Mempool(std::vector<User> &users) : users_(users) {};
+    Mempool(Users &users) : users_(users) {};
 
-    Mempool(std::vector<User> &users, std::size_t num, Money min_amount, Money max_amount, std::mt19937 &generator) : users_(users)
+    Mempool(Users &users, std::size_t num, Money min_amount, Money max_amount, std::mt19937 &generator) : users_(users)
     {
         mempool_.reserve(num);
 
@@ -68,7 +96,7 @@ public:
         }
     }
 
-    std::vector<Transaction> collect_random_txs(std::size_t max_n, std::mt19937 &generator)
+    std::vector<Transaction> collect_txs(std::size_t max_n, std::mt19937 &generator)
     {
         std::size_t min_n = static_cast<std::size_t>(0.9 * max_n); // įvairovei, kad ne visad pvz. 100
         std::uniform_int_distribution<std::size_t> n_dist(min_n, max_n);
@@ -80,11 +108,48 @@ public:
         std::uniform_int_distribution<std::size_t> txs_idx_dist(0, mempool_.size() - 1);
         std::vector<std::size_t> chosen_idxs;
         std::vector<std::size_t> checked_idxs;
-        while (txs.size() < n)
+        while (txs.size() < n && checked_idxs.size() != mempool_.size())
         {
-            Transaction tx = mempool_.at(txs_idx_dist(generator));
-            //
+            std::size_t idx;
+            do
+            {
+                idx = txs_idx_dist(generator);
+            } while (std::find(checked_idxs.begin(), checked_idxs.end(), idx) != checked_idxs.end());
+
+            chosen_idxs.push_back(idx);
+            Transaction tx = mempool_.at(idx);
+
+            // siuntėjo, gavėjo egzistavimo tikrinimas
+            std::string sender = tx.sender();     // sender vardas
+            std::string receiver = tx.receiver(); // receiver vardas
+            User sender_user;
+            User receiver_user;
+            try
+            {
+                // jeigu bus neegzistuojantis vartotojas, mes errorą
+                sender_user = users_.at(users_.get_user_idx_by_name(sender));
+                receiver_user = users_.at(users_.get_user_idx_by_name(receiver));
+            }
+            catch (std::runtime_error &e)
+            {
+                continue;
+            }
+
+            // siuntėjo būsimo balanso po transakcijos tikrinimas
+            int new_balance = static_cast<int>(sender_user.balance()) - static_cast<int>(tx.amount());
+            if (new_balance < 0)
+            {
+                continue;
+            }
+
+            // jeigu abu tikrinimus praėjo, tai transakcija turi būt valid — pridėsma kandidatinian blokan
+            txs.push_back(tx);
+            chosen_idxs.push_back(idx);
         }
+        // kandidat. blokui parinktų transakcijų iš mempoolo DAR NEŠALINAM; pašalinsim tik kai bus patvirtintas blokas (kad žinot ką šalint, surenkam pasirinktų transakcijų indeksų sąrašą)
+        // candidate_txs_idxs_.push_back(chosen_idxs);
+
+        return txs;
     }
 };
 
@@ -124,10 +189,10 @@ public:
 class Blockchain
 {
     std::vector<Block> chain_;
-    std::vector<User> &users_; // balansam, siuntėjam/gavėjam tikrint; Nuoroda users vektoriun main() funkcijoj
+    Users &users_; // balansam, siuntėjam/gavėjam tikrint; Nuoroda users vektoriun main() funkcijoj
 
 public:
-    Blockchain(std::vector<User> &users) : users_(users) // konstruktorius, sukuria users nuorodą ir sukuria genesis block
+    Blockchain(Users &users) : users_(users) // konstruktorius, sukuria users nuorodą ir sukuria genesis block
     {
         chain_.push_back(create_genesis_block());
     }
@@ -157,6 +222,7 @@ public:
     }
 };
 
+// ===============================================
 // USER
 
 class User
@@ -166,6 +232,8 @@ class User
     Money balance_;
 
 public:
+    User() = default;
+
     User(std::string &name, std::string &public_key) : name_(name), public_key_(public_key) {}
 
     User(std::string &name, std::string &public_key, Money balance) : name_(name), public_key_(public_key), balance_(balance) {}
@@ -183,6 +251,59 @@ public:
     Money balance()
     {
         return balance_;
+    }
+};
+
+class Users
+{
+    std::vector<User> users_;
+
+public:
+    Users() = default;
+
+    Users(std::uint32_t num, Money min_balance, Money max_balance, std::mt19937 &generator) // sugeneruot num userių
+    {
+        std::vector<User> users;
+        users.reserve(num);
+
+        // balansui
+        std::uniform_int_distribution<Money> dist(min_balance, max_balance);
+
+        for (int i = 0; i < num; ++i)
+        {
+            std::string name = "User" + (i + 1);
+            std::string public_key = generate_random_string(64, "0123456789abcdef", generator);
+            Money balance = dist(generator);
+            users.push_back(User(name, public_key, balance));
+        }
+    }
+
+    std::vector<User> users()
+    {
+        return users_;
+    }
+
+    std::size_t size()
+    {
+        return users_.size();
+    }
+
+    User at(std::size_t i)
+    {
+        return users_.at(i);
+    }
+
+    // jeigu būtų besikartojančių vardų (nors neturėtų būt), tai rastų tik pirmąjį tokiu vardu
+    std::size_t get_user_idx_by_name(std::string &name)
+    {
+        for (auto i = 0; i < users_.size(); ++i)
+        {
+            if (users_.at(i).name() == name)
+            {
+                return i;
+            }
+        }
+        throw std::runtime_error("No user with name " + name);
     }
 };
 
