@@ -35,6 +35,59 @@ public:
     }
 };
 
+class Mempool
+{
+    std::vector<Transaction> mempool_;
+    std::vector<User> &users_;
+
+public:
+    Mempool(std::vector<User> &users) : users_(users) {};
+
+    Mempool(std::vector<User> &users, std::size_t num, Money min_amount, Money max_amount, std::mt19937 &generator) : users_(users)
+    {
+        mempool_.reserve(num);
+
+        std::uniform_int_distribution<Money> amount_dist(min_amount, max_amount);
+        std::uniform_int_distribution<std::size_t> user_idx_dist(0, users.size() - 1);
+
+        for (std::size_t i = 0; i < num; ++i)
+        {
+            std::size_t sender_idx = user_idx_dist(generator); // pasirenkam random-tąjį vartotoją-siuntėją
+            std::size_t receiver_idx;
+            do
+            {
+                receiver_idx = user_idx_dist(generator);
+            } while (receiver_idx == sender_idx); // pasirenkam random-tąjį NE TA PATĮ vartotoją-gavėją
+
+            std::string sender = users.at(sender_idx).name();
+            std::string receiver = users.at(receiver_idx).name();
+            Money amount = amount_dist(generator);
+            // sequence = i + 1 (kad pradėt nuo vieno)
+
+            mempool_.push_back(Transaction(sender, receiver, amount, i + 1));
+        }
+    }
+
+    std::vector<Transaction> collect_random_txs(std::size_t max_n, std::mt19937 &generator)
+    {
+        std::size_t min_n = static_cast<std::size_t>(0.9 * max_n); // įvairovei, kad ne visad pvz. 100
+        std::uniform_int_distribution<std::size_t> n_dist(min_n, max_n);
+        std::size_t n = n_dist(generator); // kiek realiai bandysim įterpt transakcijų blokan
+
+        std::vector<Transaction> txs;
+        txs.reserve(n); // jeigu bus mažiau — po to reiks atpūst
+
+        std::uniform_int_distribution<std::size_t> txs_idx_dist(0, mempool_.size() - 1);
+        std::vector<std::size_t> chosen_idxs;
+        std::vector<std::size_t> checked_idxs;
+        while (txs.size() < n)
+        {
+            Transaction tx = mempool_.at(txs_idx_dist(generator));
+            //
+        }
+    }
+};
+
 // BLOKAI
 
 class BlockHeader
@@ -93,7 +146,7 @@ public:
         return genesis_block;
     }
 
-    bool validateBlock(Block block)
+    bool validateBlock(Block block) // nors tikrinimą darys ir mineris (prieš sukurdamas kandidatinį bloką), bet reik daryt ir galutinį pertikrinimą prieš patį pridėjimą
     {
         // visa logika...
     }
