@@ -16,15 +16,10 @@ int main()
 
     // atsirenkam iki 100 valid transakcijų
     std::vector<Transaction> candidate_txs = mempool.collect_txs(100, generator);
-    // ...
-    // 1. Iš fondo atsitiktinai, be pasikartojimų pasirink iki 100 tinkamų transakcijų. Paskutinis blokas gali būti mažesnis.
-    // 2. Jų taikymą tikrink laikinoje būsenos kopijoje, sąrašo tvarka. Kandidato kūrimas neturi keisti tikrųjų balansų.
-    // 3. Apskaičiuok tx_root, suformuok antraštę ir ieškok tinkamo nonce.
-    // 4. Iš naujo patikrink iškastą bloką. Tik tada pridėk jį prie grandinės, pritaikyk balansų pokyčius ir pašalink
-    // įtrauktas transakcijas iš fondo.
-    // 5. Kartok, kol fondas ištuštės arba neliks priimtinų transakcijų. Struktūriškai netinkamas atmesk su priežastimi;
-    // laikinai netinkamoms apibrėžk atidėjimo arba atmetimo taisyklę. Jų nelaikyk įtrauktomis ir nesuk
-    // nesibaigiančio ciklo.
+
+    // kandidatinio bloko sukūrimas
+    Hash prev_hash = blockchain.get_last_block_hash();
+    Block candidate_block(prev_hash, candidate_txs);
 
     return 0;
 }

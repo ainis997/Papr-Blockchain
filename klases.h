@@ -4,7 +4,7 @@
 #include <vector>
 #include <unordered_map>
 #include <ctime> // paprasčiau
-#include <exception>
+#include <stdexcept>
 #include <algorithm>
 #include "maisa.h"
 
@@ -16,7 +16,91 @@ using Money = std::uint32_t;
 constexpr std::uint32_t Version = 1;
 constexpr std::uint32_t Difficulty = 3; // pirmi 3 — nuliai
 
-// TRANSAKCIJOS
+// ============ USER(S)
+
+class User
+{
+    std::string name_;
+    std::string public_key_;
+    Money balance_;
+
+public:
+    User() = default;
+
+    User(std::string &name, std::string &public_key) : name_(name), public_key_(public_key) {}
+
+    User(std::string &name, std::string &public_key, Money balance) : name_(name), public_key_(public_key), balance_(balance) {}
+
+    std::string name()
+    {
+        return name_;
+    }
+
+    std::string public_key()
+    {
+        return public_key_;
+    }
+
+    Money balance()
+    {
+        return balance_;
+    }
+};
+
+class Users
+{
+    std::vector<User> users_;
+
+public:
+    Users() = default;
+
+    Users(std::uint32_t num, Money min_balance, Money max_balance, std::mt19937 &generator) // sugeneruot num userių
+    {
+        std::vector<User> users;
+        users.reserve(num);
+
+        // balansui
+        std::uniform_int_distribution<Money> dist(min_balance, max_balance);
+
+        for (int i = 0; i < num; ++i)
+        {
+            std::string name = "User" + (i + 1);
+            std::string public_key = generate_random_string(64, "0123456789abcdef", generator);
+            Money balance = dist(generator);
+            users.push_back(User(name, public_key, balance));
+        }
+    }
+
+    std::vector<User> users()
+    {
+        return users_;
+    }
+
+    std::size_t size()
+    {
+        return users_.size();
+    }
+
+    User at(std::size_t i)
+    {
+        return users_.at(i);
+    }
+
+    // jeigu būtų besikartojančių vardų (nors neturėtų būt), tai rastų tik pirmąjį tokiu vardu
+    std::size_t get_user_idx_by_name(std::string &name)
+    {
+        for (auto i = 0; i < users_.size(); ++i)
+        {
+            if (users_.at(i).name() == name)
+            {
+                return i;
+            }
+        }
+        throw std::runtime_error("No user with name " + name);
+    }
+};
+
+// =========== TRANSAKCIJOS
 
 class Transaction
 {
@@ -196,8 +280,21 @@ public:
               0,
               Difficulty,
               transactions) {}
-
     // transakcijos bus pertikrinamos pas blockchain prieš pridedant transakciją jan
+
+    Hash block_hash()
+    {
+        std::string prev_hash_str(header_.prev_hash_.begin(), header_.prev_hash_.end());
+        std::string tx_root_str(header_.tx_root_.begin(), header_.tx_root_.end());
+        std::string str_hashint = // block headerio stringas hashinimui
+            prev_hash_str + "|" +
+            std::to_string(header_.timestamp_) + "|" +
+            std::to_string(header_.version_) + "|" +
+            tx_root_str + "|" +
+            std::to_string(header_.nonce_) + "|" +
+            std::to_string(header_.difficulty_);
+        return str_i_hasha(str_hashint);
+    }
 };
 
 class Blockchain
@@ -219,107 +316,23 @@ public:
         return genesis_block;
     }
 
-    bool validateBlock(Block block) // nors tikrinimą darys ir mineris (prieš sukurdamas kandidatinį bloką), bet reik daryt ir galutinį pertikrinimą prieš patį pridėjimą
+    Hash get_last_block_hash()
     {
-        // visa logika...
+        if (chain_.size() == 0)
+            return Hash(32, 0);                           // neaktualu
+        return chain_.at(chain_.size() - 1).block_hash(); // iškviečiam paskutinio blockchaino blokui .block_hash() metodą, kad gaut to bloko hashą
     }
 
-    void append(Block block)
-    {
-        // pirma validate tada pridėt
-    }
+    // bool validateBlock(Block block) // nors tikrinimą darys ir mineris (prieš sukurdamas kandidatinį bloką), bet reik daryt ir galutinį pertikrinimą prieš patį pridėjimą
+    // {
+    //     // visa logika...
+    // }
+
+    // void append(Block block)
+    // {
+    //     // pirma validate tada pridėt
+    // }
 };
 
 // ===============================================
 // USER
-
-class User
-{
-    std::string name_;
-    std::string public_key_;
-    Money balance_;
-
-public:
-    User() = default;
-
-    User(std::string &name, std::string &public_key) : name_(name), public_key_(public_key) {}
-
-    User(std::string &name, std::string &public_key, Money balance) : name_(name), public_key_(public_key), balance_(balance) {}
-
-    std::string name()
-    {
-        return name_;
-    }
-
-    std::string public_key()
-    {
-        return public_key_;
-    }
-
-    Money balance()
-    {
-        return balance_;
-    }
-};
-
-class Users
-{
-    std::vector<User> users_;
-
-public:
-    Users() = default;
-
-    Users(std::uint32_t num, Money min_balance, Money max_balance, std::mt19937 &generator) // sugeneruot num userių
-    {
-        std::vector<User> users;
-        users.reserve(num);
-
-        // balansui
-        std::uniform_int_distribution<Money> dist(min_balance, max_balance);
-
-        for (int i = 0; i < num; ++i)
-        {
-            std::string name = "User" + (i + 1);
-            std::string public_key = generate_random_string(64, "0123456789abcdef", generator);
-            Money balance = dist(generator);
-            users.push_back(User(name, public_key, balance));
-        }
-    }
-
-    std::vector<User> users()
-    {
-        return users_;
-    }
-
-    std::size_t size()
-    {
-        return users_.size();
-    }
-
-    User at(std::size_t i)
-    {
-        return users_.at(i);
-    }
-
-    // jeigu būtų besikartojančių vardų (nors neturėtų būt), tai rastų tik pirmąjį tokiu vardu
-    std::size_t get_user_idx_by_name(std::string &name)
-    {
-        for (auto i = 0; i < users_.size(); ++i)
-        {
-            if (users_.at(i).name() == name)
-            {
-                return i;
-            }
-        }
-        throw std::runtime_error("No user with name " + name);
-    }
-};
-
-// // ACCOUNT BALANCES
-
-// class AccountBalances
-// {
-//     std::unordered_map<std::string, Money> account_balances;
-
-//     // public: ...
-// };
