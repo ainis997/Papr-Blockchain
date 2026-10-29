@@ -155,8 +155,10 @@ public:
 
 // BLOKAI
 
+// gal suliet Block klasėn
 class BlockHeader
 {
+public:
     Hash prev_hash_;
     std::uint64_t timestamp_;
     std::uint32_t version_;
@@ -169,11 +171,13 @@ public:
         Hash prev_hash,
         std::uint64_t timestamp,
         std::uint32_t version,
-        Hash tx_root,
         std::uint64_t nonce,
-        std::uint32_t difficulty // kiek nulių pradžioj
-        ) : prev_hash_(prev_hash), timestamp_(timestamp), version_(version), tx_root_(tx_root), nonce_(nonce), difficulty_(difficulty)
+        std::uint32_t difficulty,     // kiek nulių pradžioj
+        std::vector<Transaction> &txs // NEKEISIMAS VEKTORIUS NIEKAIP
+        ) : prev_hash_(prev_hash), timestamp_(timestamp), version_(version), nonce_(nonce), difficulty_(difficulty)
     {
+        // tx_root_ apskaičiavimas
+        tx_root_ = calc_tx_root(txs);
     }
 };
 
@@ -183,7 +187,17 @@ class Block
     std::vector<Transaction> transactions_; // šjp bus Merkle Tree struktūra
 
 public:
-    Block(BlockHeader header, std::vector<Transaction> transactions) : header_(header), transactions_(transactions) {}
+    Block(Hash prev_hash, std::vector<Transaction> &transactions)
+        : transactions_(transactions),
+          header_(
+              prev_hash,
+              std::time(0),
+              Version,
+              0,
+              Difficulty,
+              transactions) {}
+
+    // transakcijos bus pertikrinamos pas blockchain prieš pridedant transakciją jan
 };
 
 class Blockchain
@@ -199,14 +213,8 @@ public:
 
     Block create_genesis_block()
     {
-        BlockHeader block_header(
-            Hash(32, 0),  // 32 nulių vektorius
-            std::time(0), // time(0) grąžina dab. laiką, išreikštą sekundėm nuo 1970-01-01
-            Version,
-            str_i_hasha(" "),
-            0,
-            Difficulty);
-        Block genesis_block(block_header, std::vector<Transaction>()); // paduodam tuščią transakcijų vektorių
+        std::vector<Transaction> txs_empty;          // sukuriam atskirą kintamąjį, nes rvalue nepriims
+        Block genesis_block(Hash(32, 0), txs_empty); // paduodam tuščią transakcijų vektorių
 
         return genesis_block;
     }
