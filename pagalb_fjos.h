@@ -3,7 +3,8 @@
 #include <vector>
 #include <random>
 #include <cstdint>
-#include "klases.h"
+#include "blokai.h"
+#include "konstantos.h"
 
 // std::vector<User> generate_users(std::uint32_t num, Money min_balance, Money max_balance, std::mt19937 &generator);
 

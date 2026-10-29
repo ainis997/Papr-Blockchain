@@ -1,5 +1,5 @@
 #include <random>
-#include "klases.h"
+#include "blokai.h"
 #include "pagalb_fjos.h"
 
 int main()
