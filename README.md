@@ -145,15 +145,15 @@ Pavyzdys:
 
 ```
 Accepted block:
-height:        107
-transactions:  99
-prev_hash:     000f08fabc206707f1374577561bb885e172690c3f9ae21bdb34ee758c262948
-tx_root:       688f3d0b6cd8bc716294acef87c14e444e4b19dbeda6feeb28e4638bd55055b4
-hash:          000070d798f73afa7d9681df75560a44b33c55b5dfaab4cc7f70c78031bdafb9
+height:        104
+transactions:  94
+prev_hash:     000fdc9f954b76da67442380edc92237de5a5c95c3c713f1cff69cce8926254f
+tx_root:       7d00976435966962dbd202ee98e53e597f7f7187d7a739b3fa310cb6f04fcbc2
+hash:          000f5bf3d75bcce0c48fff77b438ac74587b4aae883df26f95c4dabadd64a978
 difficulty:    3
-nonce:         2384
-attempts:      2385
-duration:      0.0568644 s
+nonce:         5526
+attempts:      5527
+duration:      0.126055 s
 ```
 
 ### Atmestos ir likusios transakcijos
@@ -167,13 +167,13 @@ Programos pabaigoje pateikiama bendra statistika:
 ```text
 GENERAL STATS:
 Users:                        1000
-Blocks:                       111
-Accepted transactions:        10383
+Blocks:                       108
+Accepted transactions:        9966
 Rejected transactions:        0
-Remaining transactions:       57
+Remaining transactions:       34
 Initial money supply:         492482203
 Final money supply:           492482203
-Total duration:               140.501
+Total duration:               130.676
 ```
 
 Joje pateikiama:

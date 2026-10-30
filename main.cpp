@@ -59,8 +59,8 @@ int main()
             // DADARYTINA TEORINĖS KLAIDOS LOGIKA (kaip ir viskas patikrinta bet)
             try
             {
-                User sender = users.get_user_by_pk(tx.sender());
-                User receiver = users.get_user_by_pk(tx.receiver());
+                User &sender = users.get_user_by_pk(tx.sender());
+                User &receiver = users.get_user_by_pk(tx.receiver());
                 sender.change_balance(-1 * static_cast<int>(tx.amount())); // transakcijos amount visada teigiamas — atimam amountą iš siuntėjo
                 receiver.change_balance(static_cast<int>(tx.amount()));
             }

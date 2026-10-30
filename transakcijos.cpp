@@ -16,7 +16,7 @@ Hash get_tx_id(std::string &&sender, std::string &&receiver, Money amount, std::
     return str_i_hasha(sender + "|" + receiver + "|" + std::to_string(amount) + "|" + std::to_string(sequence));
 }
 
-void Transaction::print_data(const Users &users) const // reikalinga nuoroda prie users kad matyt vartotojų vardus ir balansus
+void Transaction::print_data(Users &users) const // reikalinga nuoroda prie users kad matyt vartotojų vardus ir balansus
 {
     std::string sender_name = users.get_user_by_pk(sender_).name();
     std::string receiver_name = users.get_user_by_pk(receiver_).name();
@@ -105,6 +105,12 @@ std::vector<Transaction> Mempool::valid_txs_remaining()
         // transakcijos id tikrinimas
         if (tx.transaction_id() != get_tx_id(tx.sender(), tx.receiver(), tx.amount(), tx.sequence()))
             continue;
+
+        // siuntėjo ir gavėjo (ne)sutapimas
+        if (tx.sender() == tx.receiver())
+        {
+            continue;
+        }
         // siuntėjo gavėjo egzistavimas
         User sender_user;
         User receiver_user;
@@ -143,6 +149,11 @@ std::vector<Transaction> Mempool::invalid_txs_remaining()
         // transakcijos id tikrinimas
         if (tx.transaction_id() != get_tx_id(tx.sender(), tx.receiver(), tx.amount(), tx.sequence()))
             invalid_txs.push_back(tx);
+        // siuntėjo ir gavėjo (ne)sutapimas
+        if (tx.sender() == tx.receiver())
+        {
+            invalid_txs.push_back(tx);
+        }
         // siuntėjo gavėjo egzistavimas
         User sender_user;
         User receiver_user;
@@ -206,9 +217,19 @@ std::vector<Transaction> Mempool::collect_txs(std::size_t max_n, std::mt19937 &g
             idx = txs_idx_dist(generator);
         } while (std::find(checked_idxs.begin(), checked_idxs.end(), idx) != checked_idxs.end());
 
-        chosen_idxs.push_back(idx);
+        checked_idxs.push_back(idx);
         Transaction tx = mempool_.at(idx);
 
+        // transakcijos id tikrinimas
+        if (tx.transaction_id() != get_tx_id(tx.sender(), tx.receiver(), tx.amount(), tx.sequence()))
+        {
+            continue;
+        }
+        // siuntėjo ir gavėjo (ne)sutapimas
+        if (tx.sender() == tx.receiver())
+        {
+            continue;
+        }
         // siuntėjo, gavėjo egzistavimo tikrinimas
         User sender_user;
         User receiver_user;

@@ -72,6 +72,12 @@ bool Blockchain::is_block_valid(Block block) // nors tikrinimą darys ir mineris
             mempool_.remove_invalid_tx(tx.transaction_id());
             return false;
         }
+        // siuntėjo ir gavėjo (ne)sutapimas
+        if (tx.sender() == tx.receiver())
+        {
+            mempool_.remove_invalid_tx(tx.transaction_id());
+            return false;
+        }
         // siuntėjo gavėjo egzistavimas (jeigu blogas — šalinam net iš mempoolo)
         User sender_user;
         User receiver_user;
