@@ -21,14 +21,14 @@ Users::Users(std::uint32_t num, Money min_balance, Money max_balance, std::mt199
 
     for (int i = 0; i < num; ++i)
     {
-        std::string name = "User" + (i + 1);
+        std::string name = "User" + std::to_string(i + 1);
         std::string public_key = generate_random_string(64, "0123456789abcdef", generator);
         Money balance = dist(generator);
         users_.push_back(User(name, public_key, balance));
     }
 }
 
-User &Users::get_user_by_pk(std::string pk)
+const User &Users::get_user_by_pk(std::string pk) const
 {
     auto it = std::find_if(users_.begin(), users_.end(), [pk](const User &user)
                            { return user.public_key() == pk; });
@@ -37,7 +37,7 @@ User &Users::get_user_by_pk(std::string pk)
     throw std::runtime_error("User with public key " + pk + " not found");
 }
 
-User &Users::get_user_by_name(std::string name)
+const User &Users::get_user_by_name(std::string name) const
 {
     auto it = std::find_if(users_.begin(), users_.end(), [name](const User &user)
                            { return user.name() == name; });

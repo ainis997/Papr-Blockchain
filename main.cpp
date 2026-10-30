@@ -86,13 +86,13 @@ int main()
     std::cout << "\nREJECTED TRANSACTIONS:\n";
     for (const auto &tx : mempool.rejected_txs())
     {
-        tx.print_data();
+        tx.print_data(users);
     }
     // likusios
     std::cout << "\nREMAINING TRANSACTIONS:\n";
     for (const auto &tx : mempool.txs())
     {
-        tx.print_data();
+        tx.print_data(users);
     }
 
     // BENDRA STATISTIKA

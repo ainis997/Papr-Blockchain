@@ -16,14 +16,20 @@ Hash get_tx_id(std::string &&sender, std::string &&receiver, Money amount, std::
     return str_i_hasha(sender + "|" + receiver + "|" + std::to_string(amount) + "|" + std::to_string(sequence));
 }
 
-void Transaction::print_data() const
+void Transaction::print_data(const Users &users) const // reikalinga nuoroda prie users kad matyt vartotojų vardus ir balansus
 {
+    std::string sender_name = users.get_user_by_pk(sender_).name();
+    std::string receiver_name = users.get_user_by_pk(receiver_).name();
+    Money sender_balance = users.get_user_by_pk(sender_).balance();
+    Money receiver_balance = users.get_user_by_pk(receiver_).balance();
     std::cout << std::left << "\n"
-              << std::setw(15) << "sender: " << sender_ << '\n'
-              << std::setw(15) << "receiver: " << receiver_ << '\n'
-              << std::setw(15) << "amount: " << amount_ << '\n'
-              << std::setw(15) << "sequence: " << sequence_ << '\n'
-              << std::setw(15) << "id: " << to_hex(transaction_id_) << '\n';
+              << std::setw(25) << "sender: " << sender_name << '\n'
+              << std::setw(25) << "sender balance: " << sender_balance << '\n'
+              << std::setw(25) << "receiver: " << receiver_name << '\n'
+              << std::setw(25) << "receiver balance: " << receiver_balance << '\n'
+              << std::setw(25) << "amount: " << amount_ << '\n'
+              << std::setw(25) << "sequence: " << sequence_ << '\n'
+              << std::setw(25) << "id: " << to_hex(transaction_id_) << '\n';
 }
 
 Mempool::Mempool(Users &users, std::size_t num, Money min_amount, Money max_amount, std::mt19937 &generator) : users_(users)

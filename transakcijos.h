@@ -50,7 +50,7 @@ public:
         return transaction_id_;
     }
 
-    void print_data() const;
+    void print_data(const Users &users) const;
 };
 
 class Mempool
