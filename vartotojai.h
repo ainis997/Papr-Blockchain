@@ -59,8 +59,7 @@ public:
         return users_.at(i);
     }
 
-    // jeigu būtų besikartojančių vardų (nors neturėtų būt), tai rastų tik pirmąjį tokiu vardu
-    std::size_t get_user_idx_by_name(std::string name);
+    User &get_user_by_pk(std::string pk);
 
     User &get_user_by_name(std::string name);
 };

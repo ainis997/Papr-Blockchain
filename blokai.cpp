@@ -1,6 +1,7 @@
 #include <stdexcept>
 #include <algorithm>
 #include <iostream>
+#include <iomanip>
 
 #include "blokai.h"
 #include "pagalb_fjos.h"
@@ -71,8 +72,8 @@ bool Blockchain::is_block_valid(Block block) // nors tikrinimą darys ir mineris
         try
         {
             // jeigu bus neegzistuojantis vartotojas, mes errorą
-            sender_user = users_.at(users_.get_user_idx_by_name(tx.sender()));
-            receiver_user = users_.at(users_.get_user_idx_by_name(tx.receiver()));
+            sender_user = users_.get_user_by_pk(tx.sender());
+            receiver_user = users_.get_user_by_pk(tx.receiver());
         }
         catch (std::runtime_error &e)
         {
@@ -100,12 +101,12 @@ void Blockchain::present_block_data(std::size_t idx)
         return;
 
     Block block = chain_.at(idx);
-    std::cout << "\n"
-              << "height: " << idx << '\n'
-              << "transactions: " << block.num_transactions() << '\n'
-              << "prev_hash: " << to_hex(block.prev_hash()) << '\n'
-              << "tx_root: " << to_hex(block.tx_root()) << '\n'
-              << "hash: " << to_hex(block.block_hash()) << '\n'
-              << "difficulty: " << block.difficulty() << '\n'
-              << "nonce: " << block.nonce() << '\n';
+    std::cout << std::left << "\n"
+              << std::setw(15) << "height: " << idx << '\n'
+              << std::setw(15) << "transactions: " << block.num_transactions() << '\n'
+              << std::setw(15) << "prev_hash: " << to_hex(block.prev_hash()) << '\n'
+              << std::setw(15) << "tx_root: " << to_hex(block.tx_root()) << '\n'
+              << std::setw(15) << "hash: " << to_hex(block.block_hash()) << '\n'
+              << std::setw(15) << "difficulty: " << block.difficulty() << '\n'
+              << std::setw(15) << "nonce: " << block.nonce() << '\n';
 }

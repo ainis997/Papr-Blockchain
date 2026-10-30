@@ -28,16 +28,13 @@ Users::Users(std::uint32_t num, Money min_balance, Money max_balance, std::mt199
     }
 }
 
-std::size_t Users::get_user_idx_by_name(std::string name)
+User &Users::get_user_by_pk(std::string pk)
 {
-    for (auto i = 0; i < users_.size(); ++i)
-    {
-        if (users_.at(i).name() == name)
-        {
-            return i;
-        }
-    }
-    throw std::runtime_error("No user with name " + name);
+    auto it = std::find_if(users_.begin(), users_.end(), [pk](const User &user)
+                           { return user.public_key() == pk; });
+    if (it != users_.end())
+        return *it;
+    throw std::runtime_error("User with public key " + pk + " not found");
 }
 
 User &Users::get_user_by_name(std::string name)

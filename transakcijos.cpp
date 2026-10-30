@@ -24,8 +24,8 @@ Mempool::Mempool(Users &users, std::size_t num, Money min_amount, Money max_amou
             receiver_idx = user_idx_dist(generator);
         } while (receiver_idx == sender_idx); // pasirenkam random-tąjį NE TA PATĮ vartotoją-gavėją
 
-        std::string sender = users.at(sender_idx).name();
-        std::string receiver = users.at(receiver_idx).name();
+        std::string sender = users.at(sender_idx).public_key();
+        std::string receiver = users.at(receiver_idx).public_key();
         Money amount = amount_dist(generator);
         // sequence = i + 1 (kad pradėt nuo vieno)
 
@@ -44,8 +44,8 @@ std::size_t Mempool::valid_txs_remaining()
         try
         {
             // jeigu bus neegzistuojantis vartotojas, mes errorą
-            sender_user = users_.at(users_.get_user_idx_by_name(tx.sender()));
-            receiver_user = users_.at(users_.get_user_idx_by_name(tx.receiver()));
+            sender_user = users_.get_user_by_pk(tx.sender());
+            receiver_user = users_.get_user_by_pk(tx.receiver());
         }
         catch (std::runtime_error &e)
         {
@@ -93,15 +93,13 @@ std::vector<Transaction> Mempool::collect_txs(std::size_t max_n, std::mt19937 &g
         Transaction tx = mempool_.at(idx);
 
         // siuntėjo, gavėjo egzistavimo tikrinimas
-        std::string sender = tx.sender();     // sender vardas
-        std::string receiver = tx.receiver(); // receiver vardas
         User sender_user;
         User receiver_user;
         try
         {
             // jeigu bus neegzistuojantis vartotojas, mes errorą
-            sender_user = users_.at(users_.get_user_idx_by_name(sender));
-            receiver_user = users_.at(users_.get_user_idx_by_name(receiver));
+            sender_user = users_.get_user_by_pk(tx.sender());
+            receiver_user = users_.get_user_by_pk(tx.receiver());
         }
         catch (std::runtime_error &e)
         {

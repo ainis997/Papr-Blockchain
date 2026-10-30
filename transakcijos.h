@@ -8,8 +8,8 @@ Hash get_tx_id(std::string &sender, std::string &receiver, Money amount, std::si
 
 class Transaction
 {
-    std::string sender_;
-    std::string receiver_;
+    std::string sender_;   // siuntėjo public_key
+    std::string receiver_; // gavėjo public_key
     Money amount_;         // unsigned, bo neneigiamas
     std::size_t sequence_; // transakcijos eilės numeris (naudinga pvz. jei yra dvi+ tokios pačios transakcijos — kad skirtųsi id ir pan.)
     Hash transaction_id_;

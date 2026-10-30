@@ -51,8 +51,8 @@ int main()
             // DADARYTINA TEORINĖS KLAIDOS LOGIKA (kaip ir viskas patikrinta bet)
             try
             {
-                User sender = users.get_user_by_name(tx.sender());
-                User receiver = users.get_user_by_name(tx.receiver());
+                User sender = users.get_user_by_pk(tx.sender());
+                User receiver = users.get_user_by_pk(tx.receiver());
                 sender.change_balance(-1 * static_cast<int>(tx.amount())); // transakcijos amount visada teigiamas — atimam amountą iš siuntėjo
                 receiver.change_balance(static_cast<int>(tx.amount()));
             }
@@ -66,8 +66,9 @@ int main()
         blockchain.present_block_data(blockchain.height() - 1); // pridėtasis blokas — paskutinis
         // papildomai pridedam nes pats blockchain nemato
         present_mining_data(attempts, duration);
-        std::cout << "attempts: " << attempts << "\nmining duration: " << duration << " s\n";
     }
+
+    // pristatyt vartotojų, transakcijų statistiką ir konkrečias likusias transakcijas, pradinę/galutinę lėšų sumas, bendrą laiką
 
     return 0;
 }
