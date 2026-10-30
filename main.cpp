@@ -11,11 +11,14 @@ int main()
     std::mt19937 generator(rd()); // rd() — sėkla, rd() grąžina pseudo-random unsigned int tiesiai iš kompo
 
     Users users(1000, 100, 1000000, generator);
+    const std::size_t initial_money_supply = users.calc_money_supply(); // pradinė visų lėšų suma
 
     Mempool mempool(users, 10000, 10, 10000, generator); // tyčia netikrinama, susigeneruos ir klaidingų transakcijų (pvz. turi 100 bet moka 1000)
 
+    auto total_start = std::chrono::high_resolution_clock::now(); // PRADŽIA ČIA (matuojam blockchaino laiką, ne visko visko)
+
     // blockchaino pradžia (konstruktorius iškart sukuria ir genesis bloką)
-    Blockchain blockchain(users);
+    Blockchain blockchain(users, mempool);
 
     while (mempool.num_valid_txs_remaining() > 0)
     {
@@ -72,12 +75,44 @@ int main()
         present_mining_data(attempts, duration);
     }
 
+    auto total_end = std::chrono::high_resolution_clock::now();
+
+    // galutinė visų lėšų suma
+    const std::size_t final_money_supply = users.calc_money_supply();
+
     // BENDRI DUOMENYS
+
+    // atmestos
+    std::cout << "\nREJECTED TRANSACTIONS:\n";
+    for (const auto &tx : mempool.rejected_txs())
+    {
+        tx.print_data();
+    }
+    // likusios
+    std::cout << "\nREMAINING TRANSACTIONS:\n";
+    for (const auto &tx : mempool.txs())
+    {
+        tx.print_data();
+    }
+
+    // BENDRA STATISTIKA
     std::size_t num_accepted_blocks = blockchain.height();
     std::size_t num_users = users.size();
     std::size_t num_accepted_txs = blockchain.get_num_txs();
-    std::size_t num_rejected_txs =
-        present_overall_data();
+    std::size_t num_removed_invalid_txs = mempool.num_rejected_txs(); // atmestų (visos blogos transakcijos išskyrus per didelio amount transakcijas)
+    std::size_t num_remaining_txs = mempool.size();                   // likusių (pagal viską — tik per didelio amount transakcijos; nebent kitokiom sąlygom gali likt ir validžių transakcijų)
+    std::chrono::duration<double> total_duration_temp = total_end - total_start;
+    double total_duration = total_duration_temp.count();
+    std::cout << "\nGENERAL STATS:";
+    present_overall_data(
+        num_users,
+        num_accepted_blocks,
+        num_accepted_txs,
+        num_removed_invalid_txs,
+        num_remaining_txs,
+        initial_money_supply,
+        final_money_supply,
+        total_duration);
 
     // pristatyt vartotojų, transakcijų statistiką ir konkrečias likusias transakcijas, pradinę/galutinę lėšų sumas, bendrą laiką
 

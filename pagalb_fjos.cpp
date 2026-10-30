@@ -45,7 +45,7 @@ bool is_valid_hash(Hash hash) // dėl spartos netikrina ar hashas tinkamas — a
     return hash.size() >= 2 && hash[0] == 0x00 && (hash[1] & 0xF0) == 0x00; // hash[1] & 0xF0 tikrina ar antrojo baito (hash[1] svarbesnioji pusė lygi 0 === ar trečias hasho skaitmuo == 0)
 }
 
-std::string to_hex(std::vector<std::uint8_t> &baitai)
+std::string to_hex(const std::vector<std::uint8_t> &baitai)
 {
     std::ostringstream oss;
     oss << std::hex; // tai lieka kaip nustatymas
@@ -74,4 +74,25 @@ void present_mining_data(std::size_t attempts, double duration)
 {
     std::cout << std::setw(15) << "attempts: " << attempts << "\n"
               << std::setw(15) << "duration: " << duration << " s\n";
+}
+
+void present_overall_data(
+    std::size_t num_users,
+    std::size_t num_accepted_blocks,
+    std::size_t num_accepted_txs,
+    std::size_t num_removed_invalid_txs,
+    std::size_t num_remaining_txs,
+    Money initial_money_supply,
+    Money final_money_supply,
+    double total_duration)
+{
+    std::cout << std::left << "\n"
+              << std::setw(30) << "Users: " << num_users << '\n'
+              << std::setw(30) << "Blocks: " << num_accepted_blocks << '\n'
+              << std::setw(30) << "Accepted transactions: " << num_accepted_txs << '\n'
+              << std::setw(30) << "Rejected transactions: " << num_removed_invalid_txs << '\n'
+              << std::setw(30) << "Remaining transactions: " << num_remaining_txs << '\n'
+              << std::setw(30) << "Initial money supply: " << initial_money_supply << '\n'
+              << std::setw(30) << "Final money supply: " << final_money_supply << '\n'
+              << std::setw(30) << "Total duration: " << total_duration << '\n';
 }

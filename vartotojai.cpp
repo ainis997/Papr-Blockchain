@@ -45,3 +45,13 @@ User &Users::get_user_by_name(std::string name)
         return *it;
     throw std::runtime_error("User with name " + name + " not found");
 }
+
+Money Users::calc_money_supply()
+{
+    Money sum = 0;
+    for (const auto &user : users_)
+    {
+        sum += user.balance();
+    }
+    return sum;
+}

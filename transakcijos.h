@@ -49,6 +49,8 @@ public:
     {
         return transaction_id_;
     }
+
+    void print_data() const;
 };
 
 class Mempool
@@ -61,6 +63,30 @@ public:
     Mempool(Users &users) : users_(users) {};
 
     Mempool(Users &users, std::size_t num, Money min_amount, Money max_amount, std::mt19937 &generator);
+
+    const std::vector<Transaction> &txs() const // galinis const — garantuoja kad niekaip viduj nekeičiam mempoolo; pradinis const — neleidzia keist mempoolo isorej
+    {
+        return mempool_;
+    }
+
+    std::size_t size()
+    {
+        return mempool_.size();
+    }
+
+    const std::vector<Transaction> &rejected_txs()
+    {
+        return rejected_txs_;
+    }
+    std::size_t num_rejected_txs()
+    {
+        return rejected_txs_.size();
+    }
+
+    bool add_tx(std::string sender, std::string receiver, Money amount);
+    bool add_tx(std::string sender, std::string receiver, Money amount, std::size_t sequence);
+
+    bool id_exists(Hash tx_id);
 
     Transaction get_tx_by_id(Hash tx_id); // grąžina transakcijos KOPIJĄ
 

@@ -1,5 +1,7 @@
 #include <algorithm>
 #include <stdexcept>
+#include <iostream>
+#include <iomanip>
 
 #include "transakcijos.h"
 #include "pagalb_fjos.h"
@@ -12,6 +14,16 @@ Hash get_tx_id(std::string &sender, std::string &receiver, Money amount, std::si
 Hash get_tx_id(std::string &&sender, std::string &&receiver, Money amount, std::size_t sequence)
 {
     return str_i_hasha(sender + "|" + receiver + "|" + std::to_string(amount) + "|" + std::to_string(sequence));
+}
+
+void Transaction::print_data() const
+{
+    std::cout << std::left << "\n"
+              << std::setw(15) << "sender: " << sender_ << '\n'
+              << std::setw(15) << "receiver: " << receiver_ << '\n'
+              << std::setw(15) << "amount: " << amount_ << '\n'
+              << std::setw(15) << "sequence: " << sequence_ << '\n'
+              << std::setw(15) << "id: " << to_hex(transaction_id_) << '\n';
 }
 
 Mempool::Mempool(Users &users, std::size_t num, Money min_amount, Money max_amount, std::mt19937 &generator) : users_(users)
@@ -33,10 +45,41 @@ Mempool::Mempool(Users &users, std::size_t num, Money min_amount, Money max_amou
         std::string sender = users.at(sender_idx).public_key();
         std::string receiver = users.at(receiver_idx).public_key();
         Money amount = amount_dist(generator);
-        // sequence = i + 1 (kad pradėt nuo vieno)
 
-        mempool_.push_back(Transaction(sender, receiver, amount, i + 1));
+        add_tx(sender, receiver, amount, i + 1);
     }
+}
+
+bool Mempool::add_tx(std::string sender, std::string receiver, Money amount)
+{
+    std::size_t sequence = mempool_.size() + 1; // +1 nes indeksuojam sequence NUO 1 (ne nuo 0)
+    Hash tx_id = get_tx_id(sender, receiver, amount, sequence);
+    if (!id_exists(tx_id)) // praktiškai neturėtų nutikt id sutapimas — sequence skirsis
+    {
+        mempool_.push_back(Transaction(sender, receiver, amount, sequence));
+        return true;
+    }
+    return false;
+}
+// perdengimas žinant sequence
+bool Mempool::add_tx(std::string sender, std::string receiver, Money amount, std::size_t sequence)
+{
+    Hash tx_id = get_tx_id(sender, receiver, amount, sequence);
+    if (!id_exists(tx_id)) // praktiškai neturėtų nutikt id sutapimas — sequence skirsis
+    {
+        mempool_.push_back(Transaction(sender, receiver, amount, sequence));
+        return true;
+    }
+    return false;
+}
+
+bool Mempool::id_exists(Hash tx_id) // naudot PRIEŠ įterpimą mempoolan, PO
+{
+    auto it = std::find_if(mempool_.begin(), mempool_.end(), [tx_id](Transaction &tx)
+                           { return tx.transaction_id() == tx_id; });
+    if (it != mempool_.end())
+        return true;
+    return false;
 }
 
 Transaction Mempool::get_tx_by_id(Hash tx_id) // grąžina transakcijos KOPIJĄ
