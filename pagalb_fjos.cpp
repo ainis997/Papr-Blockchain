@@ -113,7 +113,11 @@ std::string to_hex(std::vector<std::uint8_t> &&baitai)
     {
         oss << std::setfill('0') << std::setw(2) << static_cast<int>(baitas);
     }
-    oss << std::dec << '\n';
 
     return oss.str();
+}
+
+void present_mining_data(std::size_t attempts, double duration)
+{
+    std::cout << "attempts: " << std::left << std::setw(15) << attempts << "\nmining duration: " << std::setw(15) << duration << " s\n";
 }

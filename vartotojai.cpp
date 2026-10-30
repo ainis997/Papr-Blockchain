@@ -1,7 +1,16 @@
 #include <stdexcept>
+#include <algorithm>
 
 #include "vartotojai.h"
 #include "pagalb_fjos.h"
+
+void User::change_balance(int change)
+{
+    int new_balance = static_cast<int>(balance_) + change; // change > 0 => gavo lėšų; change < 0 => davė lėšų
+    if (new_balance < 0)
+        throw std::runtime_error("Invalid balance change.");
+    balance_ = static_cast<Money>(new_balance);
+}
 
 Users::Users(std::uint32_t num, Money min_balance, Money max_balance, std::mt19937 &generator) // sugeneruot num userių
 {
@@ -29,4 +38,13 @@ std::size_t Users::get_user_idx_by_name(std::string name)
         }
     }
     throw std::runtime_error("No user with name " + name);
+}
+
+User &Users::get_user_by_name(std::string name)
+{
+    auto it = std::find_if(users_.begin(), users_.end(), [name](const User &user)
+                           { return user.name() == name; });
+    if (it != users_.end())
+        return *it;
+    throw std::runtime_error("User with name " + name + " not found");
 }

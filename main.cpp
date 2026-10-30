@@ -43,15 +43,30 @@ int main()
         if (!ar_blokas_pridetas)
             continue; // cancel, per naują kandidatuot
 
-        // SUMAŽINT MEMPOOL
-        //
-
-        // ATNAUJINT BALANSUS
-        //
+        // SUMAŽINT MEMPOOL IR PAKEIST BALANSUS
+        for (auto &tx : candidate_block.transactions())
+        {
+            mempool.remove_tx(tx.transaction_id());
+            // atnaujint balansai
+            // DADARYTINA TEORINĖS KLAIDOS LOGIKA (kaip ir viskas patikrinta bet)
+            try
+            {
+                User sender = users.get_user_by_name(tx.sender());
+                User receiver = users.get_user_by_name(tx.receiver());
+                sender.change_balance(-1 * static_cast<int>(tx.amount())); // transakcijos amount visada teigiamas — atimam amountą iš siuntėjo
+                receiver.change_balance(static_cast<int>(tx.amount()));
+            }
+            catch (const std::runtime_error &e)
+            {
+                // PERMISLYTINA
+                std::cerr << e.what() << '\n';
+            }
+        }
 
         blockchain.present_block_data(blockchain.height() - 1); // pridėtasis blokas — paskutinis
         // papildomai pridedam nes pats blockchain nemato
-        std::cout << "Attempts: " << attempts << "\nMining duration: " << duration << " s\n";
+        present_mining_data(attempts, duration);
+        std::cout << "attempts: " << attempts << "\nmining duration: " << duration << " s\n";
     }
 
     return 0;

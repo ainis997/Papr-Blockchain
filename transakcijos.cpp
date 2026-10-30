@@ -63,6 +63,12 @@ std::size_t Mempool::valid_txs_remaining()
     return valid_txs_n;
 }
 
+void Mempool::remove_tx(Hash tx_id)
+{
+    std::erase_if(mempool_, [tx_id](Transaction &tx)
+                  { return tx.transaction_id() == tx_id; }); // transakciją identifikuoja transaction_id
+}
+
 std::vector<Transaction> Mempool::collect_txs(std::size_t max_n, std::mt19937 &generator)
 {
     std::size_t min_n = static_cast<std::size_t>(0.9 * max_n); // įvairovei, kad ne visad pvz. 100

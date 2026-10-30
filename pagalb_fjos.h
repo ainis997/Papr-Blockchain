@@ -18,3 +18,5 @@ bool is_valid_hash(Hash hash);
 
 std::string to_hex(std::vector<std::uint8_t> &baitai);
 std::string to_hex(std::vector<std::uint8_t> &&baitai);
+
+void present_mining_data(std::size_t attempts, double duration);

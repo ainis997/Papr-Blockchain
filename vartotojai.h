@@ -17,20 +17,22 @@ public:
 
     User(std::string &name, std::string &public_key, Money balance) : name_(name), public_key_(public_key), balance_(balance) {}
 
-    std::string name()
+    std::string name() const
     {
         return name_;
     }
 
-    std::string public_key()
+    std::string public_key() const
     {
         return public_key_;
     }
 
-    Money balance()
+    Money balance() const
     {
         return balance_;
     }
+
+    void change_balance(int change);
 };
 
 class Users
@@ -59,4 +61,6 @@ public:
 
     // jeigu būtų besikartojančių vardų (nors neturėtų būt), tai rastų tik pirmąjį tokiu vardu
     std::size_t get_user_idx_by_name(std::string name);
+
+    User &get_user_by_name(std::string name);
 };

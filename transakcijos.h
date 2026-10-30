@@ -63,5 +63,7 @@ public:
 
     std::size_t valid_txs_remaining();
 
+    void remove_tx(Hash tx_id);
+
     std::vector<Transaction> collect_txs(std::size_t max_n, std::mt19937 &generator);
 };
