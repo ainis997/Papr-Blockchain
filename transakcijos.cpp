@@ -2,8 +2,14 @@
 #include <stdexcept>
 
 #include "transakcijos.h"
+#include "pagalb_fjos.h"
 
 Hash get_tx_id(std::string &sender, std::string &receiver, Money amount, std::size_t sequence)
+{
+    return str_i_hasha(sender + "|" + receiver + "|" + std::to_string(amount) + "|" + std::to_string(sequence));
+}
+// rvalue perdengimas
+Hash get_tx_id(std::string &&sender, std::string &&receiver, Money amount, std::size_t sequence)
 {
     return str_i_hasha(sender + "|" + receiver + "|" + std::to_string(amount) + "|" + std::to_string(sequence));
 }
@@ -33,11 +39,23 @@ Mempool::Mempool(Users &users, std::size_t num, Money min_amount, Money max_amou
     }
 }
 
-std::size_t Mempool::valid_txs_remaining()
+Transaction Mempool::get_tx_by_id(Hash tx_id) // grąžina transakcijos KOPIJĄ
 {
-    std::size_t valid_txs_n = 0;
+    auto it = std::find_if(mempool_.begin(), mempool_.end(), [tx_id](Transaction &tx)
+                           { return tx.transaction_id() == tx_id; });
+    if (it != mempool_.end())
+        return *it;
+    throw std::runtime_error("Transaction with id " + to_hex(tx_id) + " not found");
+}
+
+std::vector<Transaction> Mempool::valid_txs_remaining()
+{
+    std::vector<Transaction> valid_txs;
     for (Transaction &tx : mempool_)
     {
+        // transakcijos id tikrinimas
+        if (tx.transaction_id() != get_tx_id(tx.sender(), tx.receiver(), tx.amount(), tx.sequence()))
+            continue;
         // siuntėjo gavėjo egzistavimas
         User sender_user;
         User receiver_user;
@@ -58,13 +76,63 @@ std::size_t Mempool::valid_txs_remaining()
             continue;
         }
         // jeigu validus
-        ++valid_txs_n;
+        valid_txs.push_back(tx);
     }
-    return valid_txs_n;
+    return valid_txs;
+}
+
+std::size_t Mempool::num_valid_txs_remaining()
+{
+    return valid_txs_remaining().size();
+}
+
+std::vector<Transaction> Mempool::invalid_txs_remaining()
+{
+    std::vector<Transaction> invalid_txs;
+    for (Transaction &tx : mempool_)
+    {
+        // transakcijos id tikrinimas
+        if (tx.transaction_id() != get_tx_id(tx.sender(), tx.receiver(), tx.amount(), tx.sequence()))
+            invalid_txs.push_back(tx);
+        // siuntėjo gavėjo egzistavimas
+        User sender_user;
+        User receiver_user;
+        try
+        {
+            // jeigu bus neegzistuojantis vartotojas, mes errorą
+            sender_user = users_.get_user_by_pk(tx.sender());
+            receiver_user = users_.get_user_by_pk(tx.receiver());
+        }
+        catch (std::runtime_error &e)
+        {
+            invalid_txs.push_back(tx);
+        }
+        // siuntėjo būsimo balanso po transakcijos tikrinimas
+        int new_balance = static_cast<int>(sender_user.balance()) - static_cast<int>(tx.amount());
+        if (new_balance < 0)
+        {
+            invalid_txs.push_back(tx);
+        }
+        // jeigu validus — neinskaitom
+    }
+    return invalid_txs;
+}
+
+std::size_t Mempool::num_invalid_txs_remaining()
+{
+    return invalid_txs_remaining().size();
 }
 
 void Mempool::remove_tx(Hash tx_id)
 {
+    std::erase_if(mempool_, [tx_id](Transaction &tx)
+                  { return tx.transaction_id() == tx_id; }); // transakciją identifikuoja transaction_id
+}
+
+void Mempool::remove_invalid_tx(Hash tx_id)
+{
+    rejected_txs_.push_back(get_tx_by_id(tx_id));
+
     std::erase_if(mempool_, [tx_id](Transaction &tx)
                   { return tx.transaction_id() == tx_id; }); // transakciją identifikuoja transaction_id
 }

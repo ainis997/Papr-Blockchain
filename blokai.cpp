@@ -66,7 +66,13 @@ bool Blockchain::is_block_valid(Block block) // nors tikrinimą darys ir mineris
 
     for (auto &tx : block.transactions())
     {
-        // siuntėjo gavėjo egzistavimas
+        // transakcijos id tikrinimas (jeigu blogas — šalinam net iš mempoolo)
+        if (tx.transaction_id() != get_tx_id(tx.sender(), tx.receiver(), tx.amount(), tx.sequence()))
+        {
+            mempool_.remove_invalid_tx(tx.transaction_id());
+            return false;
+        }
+        // siuntėjo gavėjo egzistavimas (jeigu blogas — šalinam net iš mempoolo)
         User sender_user;
         User receiver_user;
         try
@@ -77,6 +83,7 @@ bool Blockchain::is_block_valid(Block block) // nors tikrinimą darys ir mineris
         }
         catch (std::runtime_error &e)
         {
+            mempool_.remove_invalid_tx(tx.transaction_id());
             return false;
         }
         // siuntėjo būsimo balanso po transakcijos tikrinimas
@@ -109,4 +116,16 @@ void Blockchain::present_block_data(std::size_t idx)
               << std::setw(15) << "hash: " << to_hex(block.block_hash()) << '\n'
               << std::setw(15) << "difficulty: " << block.difficulty() << '\n'
               << std::setw(15) << "nonce: " << block.nonce() << '\n';
+}
+
+// bendra statistika
+
+std::size_t Blockchain::get_num_txs()
+{
+    std::size_t num_txs = 0;
+    for (Block &block : chain_)
+    {
+        num_txs += block.num_transactions();
+    }
+    return num_txs;
 }

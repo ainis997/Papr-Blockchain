@@ -5,6 +5,7 @@
 #include "konstantos.h"
 
 Hash get_tx_id(std::string &sender, std::string &receiver, Money amount, std::size_t sequence);
+Hash get_tx_id(std::string &&sender, std::string &&receiver, Money amount, std::size_t sequence);
 
 class Transaction
 {
@@ -54,16 +55,25 @@ class Mempool
 {
     std::vector<Transaction> mempool_;
     Users &users_;
-    // std::vector<std::vector<std::size_t>> candidate_txs_idxs_; // sąrašai transakcijų, kurios pasirinktos kandidatam blokam, indeksų (vienas vektorius — vienas kandidat. blokų transakcijų rinkinys)
+    std::vector<Transaction> rejected_txs_; // rejected txs = removed invalid txs
 
 public:
     Mempool(Users &users) : users_(users) {};
 
     Mempool(Users &users, std::size_t num, Money min_amount, Money max_amount, std::mt19937 &generator);
 
-    std::size_t valid_txs_remaining();
+    Transaction get_tx_by_id(Hash tx_id); // grąžina transakcijos KOPIJĄ
+
+    std::vector<Transaction> valid_txs_remaining();
+
+    std::size_t num_valid_txs_remaining();
+
+    std::vector<Transaction> invalid_txs_remaining();
+
+    std::size_t num_invalid_txs_remaining();
 
     void remove_tx(Hash tx_id);
+    void remove_invalid_tx(Hash tx_id);
 
     std::vector<Transaction> collect_txs(std::size_t max_n, std::mt19937 &generator);
 };

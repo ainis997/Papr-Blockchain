@@ -17,7 +17,7 @@ int main()
     // blockchaino pradžia (konstruktorius iškart sukuria ir genesis bloką)
     Blockchain blockchain(users);
 
-    while (mempool.valid_txs_remaining() > 0)
+    while (mempool.num_valid_txs_remaining() > 0)
     {
         // atsirenkam iki 100 valid transakcijų
         std::vector<Transaction> candidate_txs = mempool.collect_txs(100, generator);
@@ -41,7 +41,10 @@ int main()
 
         bool ar_blokas_pridetas = blockchain.append(candidate_block);
         if (!ar_blokas_pridetas)
-            continue; // cancel, per naują kandidatuot
+        {
+            std::cout << "\nBLOCK REJECTED\n";
+            continue; // cancel, per naują kandidatuo
+        }
 
         // SUMAŽINT MEMPOOL IR PAKEIST BALANSUS
         for (auto &tx : candidate_block.transactions())
@@ -63,10 +66,18 @@ int main()
             }
         }
 
+        std::cout << "\nAccepted block:";
         blockchain.present_block_data(blockchain.height() - 1); // pridėtasis blokas — paskutinis
         // papildomai pridedam nes pats blockchain nemato
         present_mining_data(attempts, duration);
     }
+
+    // BENDRI DUOMENYS
+    std::size_t num_accepted_blocks = blockchain.height();
+    std::size_t num_users = users.size();
+    std::size_t num_accepted_txs = blockchain.get_num_txs();
+    std::size_t num_rejected_txs =
+        present_overall_data();
 
     // pristatyt vartotojų, transakcijų statistiką ir konkrečias likusias transakcijas, pradinę/galutinę lėšų sumas, bendrą laiką
 

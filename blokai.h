@@ -97,10 +97,11 @@ public:
 class Blockchain
 {
     std::vector<Block> chain_;
-    Users &users_; // balansam, siuntėjam/gavėjam tikrint; Nuoroda users vektoriun main() funkcijoj
+    Users &users_;     // balansam, siuntėjam/gavėjam tikrint; Nuoroda users vektoriun main() funkcijoj
+    Mempool &mempool_; // nuoroda mempoolan — reikia negalimom transakcijom šalint
 
 public:
-    Blockchain(Users &users) : users_(users) // konstruktorius, sukuria users nuorodą ir sukuria genesis block
+    Blockchain(Users &users, Mempool &mempool) : users_(users), mempool_(mempool) // konstruktorius, sukuria users nuorodą ir sukuria genesis block
     {
         chain_.push_back(create_genesis_block());
     }
@@ -126,5 +127,9 @@ public:
         return chain_.size();
     }
 
-    void present_block_data(std::size_t idx);
+    void present_block_data(std::size_t idx); // atspausdins idx-tojo bloko duomenis
+
+    // bendra statistika
+
+    std::size_t get_num_txs();
 };
