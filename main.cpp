@@ -5,10 +5,12 @@
 #include "blokai.h"
 #include "pagalb_fjos.h"
 
+const int Seed = 123456789;
+
 int main()
 {
     std::random_device rd;
-    std::mt19937 generator(rd()); // rd() — sėkla, rd() grąžina pseudo-random unsigned int tiesiai iš kompo
+    std::mt19937 generator(Seed); // rd() — sėkla, rd() grąžina pseudo-random unsigned int tiesiai iš kompo
 
     Users users(1000, 100, 1000000, generator);
     const std::size_t initial_money_supply = users.calc_money_supply(); // pradinė visų lėšų suma
