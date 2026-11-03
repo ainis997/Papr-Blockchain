@@ -14,6 +14,8 @@ int main()
 
     Users users(1000, 100, 1000000, generator);
     const std::size_t initial_money_supply = users.calc_money_supply(); // pradinė visų lėšų suma
+    // TIKRINIMUI: vartotojų balansų būsenos gavimas (manipuliuosim tikrinimui, ATNAUJINSIM PO KIEKVIENO BLOKO PRIDĖTO)
+    BalanceState balance_state(users);
 
     Mempool mempool(users, 10000, 10, 10000, generator); // tyčia netikrinama, susigeneruos ir klaidingų transakcijų (pvz. turi 100 bet moka 1000)
 
@@ -22,10 +24,14 @@ int main()
     // blockchaino pradžia (konstruktorius iškart sukuria ir genesis bloką)
     Blockchain blockchain(users, mempool);
 
-    while (mempool.num_valid_txs_remaining() > 0)
+    while (true) // PRIEŠ KIEKVIENĄ CIKLĄ (kiekvienam blokui) ATNAUJINAM BALANSUS PAGAL DAB. BLOCKCHAINO DUOMENIS (kad galėtumėm tiksliai tikrint)
     {
+        balance_state = BalanceState(users);
+        if (mempool.num_valid_txs_remaining(balance_state) == 0)
+            break;
+
         // atsirenkam iki 100 valid transakcijų
-        std::vector<Transaction> candidate_txs = mempool.collect_txs(100, generator);
+        std::vector<Transaction> candidate_txs = mempool.collect_txs(100, balance_state, generator);
 
         // kandidatinio bloko sukūrimas
         Hash prev_hash = blockchain.get_last_block_hash();
@@ -44,12 +50,13 @@ int main()
         std::chrono::duration<double> dur = mining_end - mining_start;
         double duration = dur.count();
 
-        bool ar_blokas_pridetas = blockchain.append(candidate_block);
-        if (!ar_blokas_pridetas)
+        bool ar_validus_blokas = blockchain.is_block_valid(candidate_block, balance_state);
+        if (!ar_validus_blokas)
         {
             std::cout << "\nBLOCK REJECTED\n";
             continue; // cancel, per naują kandidatuo
         }
+        blockchain.append(candidate_block);
 
         // SUMAŽINT MEMPOOL IR PAKEIST BALANSUS
         for (auto &tx : candidate_block.transactions())
@@ -90,12 +97,20 @@ int main()
     {
         tx.print_data(users);
     }
-    // likusios
-    std::cout << "\nREMAINING TRANSACTIONS:\n";
-    for (const auto &tx : mempool.txs())
+    // // likusios
+    // std::cout << "\nREMAINING TRANSACTIONS:\n";
+    // for (const auto &tx : mempool.txs())
+    // {
+    //     tx.print_data(users);
+    // }
+
+    // debugsnai
+    // blockchain.get_block(27).print_txs(users);
+    for (auto &tx : blockchain.get_txs_by_user(users.get_user_by_name("User8").public_key()))
     {
         tx.print_data(users);
     }
+    blockchain.present_block_data(27);
 
     // BENDRA STATISTIKA
     std::size_t num_accepted_blocks = blockchain.height();
@@ -115,8 +130,6 @@ int main()
         initial_money_supply,
         final_money_supply,
         total_duration);
-
-    // pristatyt vartotojų, transakcijų statistiką ir konkrečias likusias transakcijas, pradinę/galutinę lėšų sumas, bendrą laiką
 
     return 0;
 }

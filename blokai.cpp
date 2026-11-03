@@ -38,6 +38,14 @@ Hash Block::block_hash()
     return str_i_hasha(str_hashint);
 }
 
+void Block::print_txs(Users &users) const
+{
+    for (const auto &tx : transactions_)
+    {
+        tx.print_data(users);
+    }
+}
+
 // blockchain
 
 Block Blockchain::create_genesis_block()
@@ -55,7 +63,7 @@ Hash Blockchain::get_last_block_hash()
     return chain_.at(chain_.size() - 1).block_hash(); // iškviečiam paskutinio blockchaino blokui .block_hash() metodą, kad gaut to bloko hashą
 }
 
-bool Blockchain::is_block_valid(Block block) // nors tikrinimą darys ir mineris (prieš sukurdamas kandidatinį bloką), bet reik daryt ir galutinį pertikrinimą prieš patį pridėjimą
+bool Blockchain::is_block_valid(Block block, BalanceState balances) // nors tikrinimą darys ir mineris (prieš sukurdamas kandidatinį bloką), bet reik daryt ir galutinį pertikrinimą prieš patį pridėjimą
 {
     // hasho validumas
 
@@ -93,8 +101,12 @@ bool Blockchain::is_block_valid(Block block) // nors tikrinimą darys ir mineris
             return false;
         }
         // siuntėjo būsimo balanso po transakcijos tikrinimas
-        int new_balance = static_cast<int>(sender_user.balance()) - static_cast<int>(tx.amount());
-        if (new_balance < 0)
+        try
+        {
+            balances.change_balance(tx.sender(), -static_cast<int>(tx.amount()));
+            balances.change_balance(tx.receiver(), static_cast<int>(tx.amount()));
+        }
+        catch (const std::runtime_error &e)
         {
             return false;
         }
@@ -134,4 +146,20 @@ std::size_t Blockchain::get_num_txs()
         num_txs += block.num_transactions();
     }
     return num_txs;
+}
+
+std::vector<Transaction> Blockchain::get_txs_by_user(std::string public_key)
+{
+    std::vector<Transaction> txs_by_user;
+    for (Block &block : chain_)
+    {
+        for (Transaction &tx : block.transactions())
+        {
+            if (tx.sender() == public_key)
+            {
+                txs_by_user.push_back(tx);
+            }
+        }
+    }
+    return txs_by_user;
 }

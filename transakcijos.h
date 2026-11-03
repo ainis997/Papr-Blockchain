@@ -90,16 +90,16 @@ public:
 
     Transaction get_tx_by_id(Hash tx_id); // grąžina transakcijos KOPIJĄ
 
-    std::vector<Transaction> valid_txs_remaining();
+    std::vector<Transaction> valid_txs_remaining(BalanceState balance_state);
 
-    std::size_t num_valid_txs_remaining();
+    std::size_t num_valid_txs_remaining(BalanceState balance_state);
 
-    std::vector<Transaction> invalid_txs_remaining();
+    std::vector<Transaction> invalid_txs_remaining(BalanceState balance_state);
 
-    std::size_t num_invalid_txs_remaining();
+    std::size_t num_invalid_txs_remaining(BalanceState balance_state);
 
     void remove_tx(Hash tx_id);
     void remove_invalid_tx(Hash tx_id);
 
-    std::vector<Transaction> collect_txs(std::size_t max_n, std::mt19937 &generator);
+    std::vector<Transaction> collect_txs(std::size_t max_n, BalanceState balances, std::mt19937 &generator);
 };

@@ -2,6 +2,7 @@
 
 #include <string>
 #include <random>
+#include <map>
 #include "konstantos.h"
 
 class User
@@ -64,4 +65,36 @@ public:
     User &get_user_by_name(std::string name);
 
     Money calc_money_supply();
+};
+
+class BalanceState // klasė laikyt ir manipuliuot laikiniem userių balansam (kad tikrint bloko transakcijų validumą)
+{
+    std::map<std::string, Money> users_balances;
+
+public:
+    BalanceState(Users &users)
+    {
+        for (User &u : users.users())
+        {
+            users_balances.insert({u.public_key(), u.balance()});
+        }
+    }
+
+    Money get_user_balance(std::string &public_key)
+    {
+        if (!users_balances.contains(public_key))
+            throw std::runtime_error("User not found.");
+        return users_balances.at(public_key);
+    }
+
+    void change_balance(std::string public_key, int change) // change > 0 => gavo lėšų; change < 0 => davė lėšų
+    {
+        if (users_balances.contains(public_key))
+        {
+            int new_balance = static_cast<int>(users_balances.at(public_key)) + change; // change > 0 => gavo lėšų; change < 0 => davė lėšų
+            if (new_balance < 0)
+                throw std::runtime_error("Invalid balance change.");
+            users_balances.at(public_key) = static_cast<Money>(new_balance);
+        }
+    }
 };

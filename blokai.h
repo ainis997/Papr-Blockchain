@@ -92,6 +92,8 @@ public:
     {
         ++header_.nonce_;
     }
+
+    void print_txs(Users &users) const;
 };
 
 class Blockchain
@@ -108,18 +110,24 @@ public:
 
     Block create_genesis_block();
 
+    const Block &get_block(std::size_t idx) const
+    {
+        return chain_.at(idx); // jeigu idx >= chain_.size(), mes errorą
+    }
+
     Hash get_last_block_hash();
 
-    bool is_block_valid(Block block); // nors tikrinimą darys ir mineris (prieš sukurdamas kandidatinį bloką), bet reik daryt ir galutinį pertikrinimą prieš patį pridėjimą
+    bool is_block_valid(Block block, BalanceState balances); // nors tikrinimą darys ir mineris (prieš sukurdamas kandidatinį bloką), bet reik daryt ir galutinį pertikrinimą prieš patį pridėjimą
 
-    bool append(Block block)
+    void append(Block block) // pridėt reikia tik validavus
     {
-        if (is_block_valid(block))
-        {
-            chain_.push_back(block);
-            return true;
-        }
-        return false;
+        chain_.push_back(block);
+        // if (is_block_valid(block))
+        // {
+        //     chain_.push_back(block);
+        //     return true;
+        // }
+        // return false;
     }
 
     std::size_t height()
@@ -132,4 +140,6 @@ public:
     // bendra statistika
 
     std::size_t get_num_txs();
+
+    std::vector<Transaction> get_txs_by_user(std::string public_key);
 };

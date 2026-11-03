@@ -97,7 +97,7 @@ Transaction Mempool::get_tx_by_id(Hash tx_id) // grąžina transakcijos KOPIJĄ
     throw std::runtime_error("Transaction with id " + to_hex(tx_id) + " not found");
 }
 
-std::vector<Transaction> Mempool::valid_txs_remaining()
+std::vector<Transaction> Mempool::valid_txs_remaining(BalanceState balance_state)
 {
     std::vector<Transaction> valid_txs;
     for (Transaction &tx : mempool_)
@@ -125,8 +125,12 @@ std::vector<Transaction> Mempool::valid_txs_remaining()
             continue;
         }
         // siuntėjo būsimo balanso po transakcijos tikrinimas
-        int new_balance = static_cast<int>(sender_user.balance()) - static_cast<int>(tx.amount());
-        if (new_balance < 0)
+        try
+        {
+            balance_state.change_balance(tx.sender(), -static_cast<int>(tx.amount()));
+            balance_state.change_balance(tx.receiver(), static_cast<int>(tx.amount()));
+        }
+        catch (const std::runtime_error &e)
         {
             continue;
         }
@@ -136,12 +140,12 @@ std::vector<Transaction> Mempool::valid_txs_remaining()
     return valid_txs;
 }
 
-std::size_t Mempool::num_valid_txs_remaining()
+std::size_t Mempool::num_valid_txs_remaining(BalanceState balance_state)
 {
-    return valid_txs_remaining().size();
+    return valid_txs_remaining(balance_state).size();
 }
 
-std::vector<Transaction> Mempool::invalid_txs_remaining()
+std::vector<Transaction> Mempool::invalid_txs_remaining(BalanceState balance_state)
 {
     std::vector<Transaction> invalid_txs;
     for (Transaction &tx : mempool_)
@@ -168,8 +172,12 @@ std::vector<Transaction> Mempool::invalid_txs_remaining()
             invalid_txs.push_back(tx);
         }
         // siuntėjo būsimo balanso po transakcijos tikrinimas
-        int new_balance = static_cast<int>(sender_user.balance()) - static_cast<int>(tx.amount());
-        if (new_balance < 0)
+        try
+        {
+            balance_state.change_balance(tx.sender(), -static_cast<int>(tx.amount()));
+            balance_state.change_balance(tx.receiver(), static_cast<int>(tx.amount()));
+        }
+        catch (const std::runtime_error &e)
         {
             invalid_txs.push_back(tx);
         }
@@ -178,9 +186,9 @@ std::vector<Transaction> Mempool::invalid_txs_remaining()
     return invalid_txs;
 }
 
-std::size_t Mempool::num_invalid_txs_remaining()
+std::size_t Mempool::num_invalid_txs_remaining(BalanceState balance_state)
 {
-    return invalid_txs_remaining().size();
+    return invalid_txs_remaining(balance_state).size();
 }
 
 void Mempool::remove_tx(Hash tx_id)
@@ -197,7 +205,7 @@ void Mempool::remove_invalid_tx(Hash tx_id)
                   { return tx.transaction_id() == tx_id; }); // transakciją identifikuoja transaction_id
 }
 
-std::vector<Transaction> Mempool::collect_txs(std::size_t max_n, std::mt19937 &generator)
+std::vector<Transaction> Mempool::collect_txs(std::size_t max_n, BalanceState balances, std::mt19937 &generator)
 {
     std::size_t min_n = static_cast<std::size_t>(0.9 * max_n); // įvairovei, kad ne visad pvz. 100
     std::uniform_int_distribution<std::size_t> n_dist(min_n, max_n);
@@ -243,10 +251,13 @@ std::vector<Transaction> Mempool::collect_txs(std::size_t max_n, std::mt19937 &g
         {
             continue;
         }
-
         // siuntėjo būsimo balanso po transakcijos tikrinimas
-        int new_balance = static_cast<int>(sender_user.balance()) - static_cast<int>(tx.amount());
-        if (new_balance < 0)
+        try
+        {
+            balances.change_balance(tx.sender(), -static_cast<int>(tx.amount()));
+            balances.change_balance(tx.receiver(), static_cast<int>(tx.amount()));
+        }
+        catch (const std::runtime_error &e)
         {
             continue;
         }
