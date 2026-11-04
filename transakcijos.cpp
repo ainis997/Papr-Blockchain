@@ -124,6 +124,11 @@ std::vector<Transaction> Mempool::valid_txs_remaining(BalanceState balance_state
         {
             continue;
         }
+        // transakcijos suma
+        if (tx.amount() == 0)
+        {
+            continue;
+        }
         // siuntėjo būsimo balanso po transakcijos tikrinimas
         try
         {
@@ -168,6 +173,11 @@ std::vector<Transaction> Mempool::invalid_txs_remaining(BalanceState balance_sta
             receiver_user = users_.get_user_by_pk(tx.receiver());
         }
         catch (std::runtime_error &e)
+        {
+            invalid_txs.push_back(tx);
+        }
+        // transakcijos suma
+        if (tx.amount() == 0)
         {
             invalid_txs.push_back(tx);
         }
@@ -248,6 +258,11 @@ std::vector<Transaction> Mempool::collect_txs(std::size_t max_n, BalanceState ba
             receiver_user = users_.get_user_by_pk(tx.receiver());
         }
         catch (std::runtime_error &e)
+        {
+            continue;
+        }
+        // transakcijos suma
+        if (tx.amount() == 0)
         {
             continue;
         }

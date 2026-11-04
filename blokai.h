@@ -35,7 +35,7 @@ class Block
     std::vector<Transaction> transactions_; // šjp bus Merkle Tree struktūra
 
 public:
-    Block(Hash prev_hash, std::vector<Transaction> &transactions)
+    Block(Hash prev_hash, std::vector<Transaction> &&transactions)
         : transactions_(transactions),
           header_(
               prev_hash,

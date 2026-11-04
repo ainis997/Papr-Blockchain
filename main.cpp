@@ -19,7 +19,7 @@ int main()
 
     Mempool mempool(users, 10000, 10, 10000, generator); // tyčia netikrinama, susigeneruos ir klaidingų transakcijų (pvz. turi 100 bet moka 1000)
 
-    auto total_start = std::chrono::high_resolution_clock::now(); // PRADŽIA ČIA (matuojam blockchaino laiką, ne visko visko)
+    auto total_start = std::chrono::steady_clock::now(); // PRADŽIA ČIA (matuojam blockchaino laiką, ne visko visko)
 
     // blockchaino pradžia (konstruktorius iškart sukuria ir genesis bloką)
     Blockchain blockchain(users, mempool);
@@ -30,40 +30,111 @@ int main()
         if (mempool.num_valid_txs_remaining(balance_state) == 0)
             break;
 
-        // atsirenkam iki 100 valid transakcijų
-        std::vector<Transaction> candidate_txs = mempool.collect_txs(MaxTxsInBlock, balance_state, generator);
+        // KANDIDATŲ PARUOŠIMAS
 
-        // kandidatinio bloko sukūrimas
+        constexpr std::size_t NumCandidates = 5;
+
         Hash prev_hash = blockchain.get_last_block_hash();
-        Block candidate_block(prev_hash, candidate_txs);
 
-        // kasimas
-        Hash valid_hash;
-        std::size_t attempts = 1; // pirmas bandymas — įeinant while ciklan
-        auto mining_start = std::chrono::high_resolution_clock::now();
-        while (!is_valid_hash(valid_hash = candidate_block.block_hash()))
+        std::vector<Block> candidates;
+        candidates.reserve(NumCandidates);
+
+        for (std::size_t i = 0; i < NumCandidates; ++i)
         {
-            candidate_block.incr_nonce();
-            ++attempts;
-        }
-        auto mining_end = std::chrono::high_resolution_clock::now();
-        std::chrono::duration<double> dur = mining_end - mining_start;
-        double duration = dur.count();
+            // atsirenkam iki 100 valid transakcijų
+            std::vector<Transaction> candidate_txs = mempool.collect_txs(MaxTxsInBlock, balance_state, generator);
 
-        bool ar_validus_blokas = blockchain.is_block_valid(candidate_block, balance_state);
-        if (!ar_validus_blokas)
+            // kandidatinio bloko sukūrimas (iškart vektoriaus viduj — emplace_back() tą daro)
+            candidates.emplace_back(prev_hash, std::move(candidate_txs));
+        }
+
+        // KASIMAS
+
+        const auto InitialMiningBudget = std::chrono::seconds(1);
+        const auto MaxMiningBudget = std::chrono::seconds(5);
+
+        std::vector<bool> mined(NumCandidates, false);
+        std::vector<std::size_t> attempts(NumCandidates, 0);
+        std::vector<double> mining_durations(NumCandidates, 0.0);
+
+        auto mining_budget = InitialMiningBudget;
+
+        while (true)
+        {
+            for (std::size_t i = 0; i < NumCandidates; ++i)
+            {
+                // jei kandidatas jau iškastas arba jei jis tuščias — nekasam
+                if (mined.at(i) || candidates.at(i).transactions().empty())
+                    continue;
+
+                auto mining_start = std::chrono::steady_clock::now();
+
+                while (std::chrono::steady_clock::now() - mining_start < mining_budget)
+                {
+                    Hash hash = candidates.at(i).block_hash();
+                    ++attempts.at(i);
+
+                    if (is_valid_hash(hash))
+                    {
+                        mined.at(i) = true;
+                        break;
+                    }
+
+                    candidates.at(i).incr_nonce();
+                }
+
+                auto mining_end = std::chrono::steady_clock::now();
+
+                std::chrono::duration<double> dur = mining_end - mining_start;
+                mining_durations.at(i) += dur.count();
+            }
+
+            // su any_of() tikrinam ar bent vienas kandidatas buvo iškastas
+            bool are_any_mined = std::any_of(mined.begin(), mined.end(), [](bool is_mined)
+                                             { return is_mined; });
+
+            if (are_any_mined)
+                break;
+
+            if (mining_budget >= MaxMiningBudget)
+                break;
+
+            // padidinam biudžetą (jeigu dar nieko nepavyko iškast)
+            mining_budget = std::min(mining_budget * 2, MaxMiningBudget);
+        }
+
+        // NUGALĖTOJO ATRANKA
+
+        std::size_t winner_idx = NumCandidates; // toks idx negali būt naudojamas — toks idx liks tik jeigu nugalėtojo neradom
+        for (std::size_t i = 0; i < NumCandidates; ++i)
+        {
+            // winner_idx = i, jei i-tasis blokas iškastas ir winner_idx dar nepriskirtas (== NumCandidates) arba jei i-tojo bloko kasimas truko trumpiau nei kol kas laimėtojo
+            if (mined.at(i) && (winner_idx == NumCandidates || mining_durations.at(i) < mining_durations.at(winner_idx)))
+            {
+                winner_idx = i;
+            }
+        }
+        // jei kažkodėl nepavyko nieko iškast, sekančiam kartojime bandysim vėl
+        if (winner_idx == NumCandidates)
+            continue;
+
+        Block &winning_block = candidates.at(winner_idx);
+
+        // NUGALĖTOJO PATIKRINIMAS
+
+        if (!blockchain.is_block_valid(winning_block, balance_state))
         {
             std::cout << "\nBLOCK REJECTED\n";
             continue; // cancel, per naują kandidatuo
         }
-        blockchain.append(candidate_block);
+
+        blockchain.append(winning_block);
 
         // SUMAŽINT MEMPOOL IR PAKEIST BALANSUS
-        for (auto &tx : candidate_block.transactions())
+
+        for (auto &tx : winning_block.transactions())
         {
-            mempool.remove_tx(tx.transaction_id());
             // atnaujint balansai
-            // DADARYTINA TEORINĖS KLAIDOS LOGIKA (kaip ir viskas patikrinta bet)
             try
             {
                 User &sender = users.get_user_by_pk(tx.sender());
@@ -73,18 +144,27 @@ int main()
             }
             catch (const std::runtime_error &e)
             {
-                // PERMISLYTINA
+                // niturīlai audātun sin
                 std::cerr << e.what() << '\n';
             }
+
+            mempool.remove_tx(tx.transaction_id());
         }
 
         std::cout << "\nAccepted block:";
         blockchain.present_block_data(blockchain.height() - 1); // pridėtasis blokas — paskutinis
         // papildomai pridedam nes pats blockchain nemato
-        present_mining_data(attempts, duration);
+        present_mining_data(attempts.at(winner_idx), mining_durations.at(winner_idx));
+
+        // DEBUGSNAI vvv
+        std::cout << "All candidate block mining data:\n";
+        for (std::size_t i = 0; i < NumCandidates; ++i)
+        {
+            present_mining_data(attempts.at(i), mining_durations.at(i));
+        }
     }
 
-    auto total_end = std::chrono::high_resolution_clock::now();
+    auto total_end = std::chrono::steady_clock::now();
 
     // galutinė visų lėšų suma
     const std::size_t final_money_supply = users.calc_money_supply();

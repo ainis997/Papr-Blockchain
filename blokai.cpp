@@ -50,8 +50,7 @@ void Block::print_txs(Users &users) const
 
 Block Blockchain::create_genesis_block()
 {
-    std::vector<Transaction> txs_empty;          // sukuriam atskirą kintamąjį, nes rvalue nepriims
-    Block genesis_block(Hash(32, 0), txs_empty); // paduodam tuščią transakcijų vektorių
+    Block genesis_block(Hash(32, 0), std::vector<Transaction>()); // paduodam tuščią transakcijų vektorių
 
     return genesis_block;
 }
@@ -110,6 +109,12 @@ bool Blockchain::is_block_valid(Block block, BalanceState balances) // nors tikr
             receiver_user = users_.get_user_by_pk(tx.receiver());
         }
         catch (std::runtime_error &e)
+        {
+            mempool_.remove_invalid_tx(tx.transaction_id());
+            return false;
+        }
+        // transakcijos suma (jeigu 0 — šalinam net iš mempoolo)
+        if (tx.amount() == 0)
         {
             mempool_.remove_invalid_tx(tx.transaction_id());
             return false;
