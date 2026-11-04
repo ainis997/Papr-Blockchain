@@ -129,6 +129,10 @@ bool Blockchain::is_block_valid(Block block, BalanceState balances) // nors tikr
         {
             return false;
         }
+
+        // transakcijos id blockchaine buvimas (kad išvengt dubliuotų transakcijų)
+        if (confirmed_tx_ids_.contains(tx.transaction_id()))
+            return false;
     }
 
     return true;

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <ctime>
+#include <set>
 
 #include "konstantos.h"
 #include "transakcijos.h"
@@ -99,8 +100,9 @@ public:
 class Blockchain
 {
     std::vector<Block> chain_;
-    Users &users_;     // balansam, siuntėjam/gavėjam tikrint; Nuoroda users vektoriun main() funkcijoj
-    Mempool &mempool_; // nuoroda mempoolan — reikia negalimom transakcijom šalint
+    std::set<Hash> confirmed_tx_ids_; // skirta greitai tikrint ar transakcija jau nebuvo pakliuvus blockchainan
+    Users &users_;                    // balansam, siuntėjam/gavėjam tikrint; Nuoroda users vektoriun main() funkcijoj
+    Mempool &mempool_;                // nuoroda mempoolan — reikia negalimom transakcijom šalint
 
 public:
     Blockchain(Users &users, Mempool &mempool) : users_(users), mempool_(mempool) // konstruktorius, sukuria users nuorodą ir sukuria genesis block
@@ -119,15 +121,15 @@ public:
 
     bool is_block_valid(Block block, BalanceState balances); // nors tikrinimą darys ir mineris (prieš sukurdamas kandidatinį bloką), bet reik daryt ir galutinį pertikrinimą prieš patį pridėjimą
 
-    void append(Block block) // pridėt reikia tik validavus
+    void append(Block block) // pridėt reikia tik validavus!
     {
         chain_.push_back(block);
-        // if (is_block_valid(block))
-        // {
-        //     chain_.push_back(block);
-        //     return true;
-        // }
-        // return false;
+
+        // confirmed_tx_ids_ papildymas — reikia dubliuotom transakcijom išvengt
+        for (const auto &tx : block.transactions())
+        {
+            confirmed_tx_ids_.insert(tx.transaction_id());
+        }
     }
 
     std::size_t height()

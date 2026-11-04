@@ -41,8 +41,9 @@ int main()
 
         for (std::size_t i = 0; i < NumCandidates; ++i)
         {
+            BalanceState candidate_state = balance_state;
             // atsirenkam iki 100 valid transakcijų
-            std::vector<Transaction> candidate_txs = mempool.collect_txs(MaxTxsInBlock, balance_state, generator);
+            std::vector<Transaction> candidate_txs = mempool.collect_txs(MaxTxsInBlock, candidate_state, generator);
 
             // kandidatinio bloko sukūrimas (iškart vektoriaus viduj — emplace_back() tą daro)
             candidates.emplace_back(prev_hash, std::move(candidate_txs));
@@ -155,13 +156,6 @@ int main()
         blockchain.present_block_data(blockchain.height() - 1); // pridėtasis blokas — paskutinis
         // papildomai pridedam nes pats blockchain nemato
         present_mining_data(attempts.at(winner_idx), mining_durations.at(winner_idx));
-
-        // DEBUGSNAI vvv
-        std::cout << "All candidate block mining data:\n";
-        for (std::size_t i = 0; i < NumCandidates; ++i)
-        {
-            present_mining_data(attempts.at(i), mining_durations.at(i));
-        }
     }
 
     auto total_end = std::chrono::steady_clock::now();
