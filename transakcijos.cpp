@@ -271,3 +271,45 @@ std::vector<Transaction> Mempool::collect_txs(std::size_t max_n, BalanceState ba
 
     return txs;
 }
+
+// ========== MERKLE TREE
+
+MerkleTree::MerkleTree(const std::vector<Hash> &tx_ids)
+{
+    if (tx_ids.empty())
+        return;
+
+    // lapų lygis
+    levels_.push_back(tx_ids);
+
+    // vidiniai mazgai — yra nebaigta iki kol nebus lygyje tik 1 mazgas (ROOT)
+    while (levels_.back().size() > 1)
+    {
+        const auto &curr_level = levels_.back();
+
+        std::vector<Hash> next_level;
+        next_level.reserve((curr_level.size() + 1) / 2); // rezervuojam tiek, kiek aukštesniam lygy bus mazgų
+
+        for (std::size_t i = 0; i < curr_level.size(); i += 2)
+        {
+            Hash left_child = curr_level.at(i);
+            // jei nėr dešinio vaiko (t.y. kai i — paskutinio mazgo idx), imam kairio vaiko kopiją
+            Hash right_child = (i + 1 < curr_level.size()) ? curr_level.at(i + 1) : curr_level.at(i);
+
+            // concatinam prie left_child, tai jo reikšmė gausis bus left_child + right_child
+            left_child.insert(left_child.end(), right_child.begin(), right_child.end());
+            next_level.push_back(gaut_256bit_hasha(baitus_sujungt_po_4(std::move(left_child))));
+        }
+
+        levels_.push_back(std::move(next_level));
+    }
+}
+
+Hash MerkleTree::root() const
+{
+    if (levels_.empty())
+    {
+        return str_i_hasha(" ");
+    }
+    return levels_.back().front(); // .front() = .at(0) — paima tree šaknį (paskutinio lygio vektoriaus pirmą (vienintelį) elementą)
+}

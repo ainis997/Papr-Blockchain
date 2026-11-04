@@ -19,44 +19,61 @@ std::string generate_random_string(const std::size_t length, const std::string &
     return random_str;
 }
 
+std::vector<Hash> extract_tx_ids(const std::vector<Transaction> &txs)
+{
+    std::vector<Hash> ids;
+    ids.reserve(txs.size());
+    for (const auto &tx : txs)
+    {
+        ids.push_back(tx.transaction_id());
+    }
+    return ids;
+}
+
 Hash calc_tx_root(std::vector<Transaction> &txs)
 {
-    Hash tx_root;
-    std::vector<std::uint8_t> bytes; // surinksim visų transaction_id baitus (transaction_id — hashas)
-    for (Transaction &tx : txs)
-    {
-        Hash id = tx.transaction_id();
-        bytes.insert(bytes.end(), id.begin(), id.end());
-    }
-    if (bytes.empty()) // genesis blokui
-    {
-        tx_root = str_i_hasha(" ");
-    }
-    else
-    {
-        tx_root = gaut_256bit_hasha(baitus_sujungt_po_4(std::move(bytes)));
-    }
-    return tx_root;
+    auto tx_ids = extract_tx_ids(txs);
+    MerkleTree tx_mt(tx_ids);
+    return tx_mt.root();
+    // Hash tx_root;
+    // std::vector<std::uint8_t> bytes; // surinksim visų transaction_id baitus (transaction_id — hashas)
+    // for (Transaction &tx : txs)
+    // {
+    //     Hash id = tx.transaction_id();
+    //     bytes.insert(bytes.end(), id.begin(), id.end());
+    // }
+    // if (bytes.empty()) // genesis blokui
+    // {
+    //     tx_root = str_i_hasha(" ");
+    // }
+    // else
+    // {
+    //     tx_root = gaut_256bit_hasha(baitus_sujungt_po_4(std::move(bytes)));
+    // }
+    // return tx_root;
 }
 // RVALUE PARAMETRO PERDENGIMAS
 Hash calc_tx_root(std::vector<Transaction> &&txs)
 {
-    Hash tx_root;
-    std::vector<std::uint8_t> bytes; // surinksim visų transaction_id baitus (transaction_id — hashas)
-    for (Transaction &tx : txs)
-    {
-        Hash id = tx.transaction_id();
-        bytes.insert(bytes.end(), id.begin(), id.end());
-    }
-    if (bytes.empty()) // genesis blokui
-    {
-        tx_root = str_i_hasha(" ");
-    }
-    else
-    {
-        tx_root = gaut_256bit_hasha(baitus_sujungt_po_4(std::move(bytes)));
-    }
-    return tx_root;
+    auto tx_ids = extract_tx_ids(txs);
+    MerkleTree tx_mt(tx_ids);
+    return tx_mt.root();
+    // Hash tx_root;
+    // std::vector<std::uint8_t> bytes; // surinksim visų transaction_id baitus (transaction_id — hashas)
+    // for (Transaction &tx : txs)
+    // {
+    //     Hash id = tx.transaction_id();
+    //     bytes.insert(bytes.end(), id.begin(), id.end());
+    // }
+    // if (bytes.empty()) // genesis blokui
+    // {
+    //     tx_root = str_i_hasha(" ");
+    // }
+    // else
+    // {
+    //     tx_root = gaut_256bit_hasha(baitus_sujungt_po_4(std::move(bytes)));
+    // }
+    // return tx_root;
 }
 
 // koleikas hardcoded trijų tikrinimas

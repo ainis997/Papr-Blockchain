@@ -8,6 +8,8 @@
 
 std::string generate_random_string(const std::size_t length, const std::string &chars, std::mt19937 &generator);
 
+std::vector<Hash> extract_tx_ids(const std::vector<Transaction> &txs);
+
 Hash calc_tx_root(std::vector<Transaction> &txs);
 // RVALUE PARAMETRO PERDENGIMAS
 Hash calc_tx_root(std::vector<Transaction> &&txs);

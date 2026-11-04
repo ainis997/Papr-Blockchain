@@ -45,7 +45,7 @@ public:
         return sequence_;
     }
 
-    Hash transaction_id()
+    Hash transaction_id() const
     {
         return transaction_id_;
     }
@@ -102,4 +102,19 @@ public:
     void remove_invalid_tx(Hash tx_id);
 
     std::vector<Transaction> collect_txs(std::size_t max_n, BalanceState balances, std::mt19937 &generator);
+};
+
+class MerkleTree
+{
+    std::vector<std::vector<Hash>> levels_;
+
+public:
+    MerkleTree(const std::vector<Hash> &tx_ids);
+
+    Hash root() const;
+
+    const std::vector<std::vector<Hash>> &levels() const
+    {
+        return levels_;
+    }
 };

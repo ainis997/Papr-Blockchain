@@ -97,20 +97,20 @@ int main()
     {
         tx.print_data(users);
     }
-    // // likusios
-    // std::cout << "\nREMAINING TRANSACTIONS:\n";
-    // for (const auto &tx : mempool.txs())
-    // {
-    //     tx.print_data(users);
-    // }
-
-    // debugsnai
-    // blockchain.get_block(27).print_txs(users);
-    for (auto &tx : blockchain.get_txs_by_user(users.get_user_by_name("User8").public_key()))
+    // likusios
+    std::cout << "\nREMAINING TRANSACTIONS:\n";
+    for (const auto &tx : mempool.txs())
     {
         tx.print_data(users);
     }
-    blockchain.present_block_data(27);
+
+    // // debugsnai
+    // // blockchain.get_block(27).print_txs(users);
+    // for (auto &tx : blockchain.get_txs_by_user(users.get_user_by_name("User8").public_key()))
+    // {
+    //     tx.print_data(users);
+    // }
+    // blockchain.present_block_data(27);
 
     // BENDRA STATISTIKA
     std::size_t num_accepted_blocks = blockchain.height();
