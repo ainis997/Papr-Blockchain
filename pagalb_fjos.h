@@ -14,6 +14,8 @@ Hash calc_tx_root(std::vector<Transaction> &txs);
 // RVALUE PARAMETRO PERDENGIMAS
 Hash calc_tx_root(std::vector<Transaction> &&txs);
 
+Hash hash_pair(Hash &l, Hash &r);
+
 bool is_valid_hash(Hash hash);
 
 std::string to_hex(const std::vector<std::uint8_t> &baitai);

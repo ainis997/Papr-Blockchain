@@ -76,6 +76,13 @@ Hash calc_tx_root(std::vector<Transaction> &&txs)
     // return tx_root;
 }
 
+Hash hash_pair(Hash &l, Hash &r)
+{
+    Hash l_copy = l; // kad neparedaguot ir nepamove'int l nurodomojo objekto
+    l_copy.insert(l_copy.end(), r.begin(), r.end());
+    return gaut_256bit_hasha(baitus_sujungt_po_4(std::move(l_copy)));
+}
+
 // koleikas hardcoded trijų tikrinimas
 bool is_valid_hash(Hash hash) // dėl spartos netikrina ar hashas tinkamas — ar yra 32 baitų
 {

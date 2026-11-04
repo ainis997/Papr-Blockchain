@@ -311,9 +311,7 @@ MerkleTree::MerkleTree(const std::vector<Hash> &tx_ids)
             // jei nėr dešinio vaiko (t.y. kai i — paskutinio mazgo idx), imam kairio vaiko kopiją
             Hash right_child = (i + 1 < curr_level.size()) ? curr_level.at(i + 1) : curr_level.at(i);
 
-            // concatinam prie left_child, tai jo reikšmė gausis bus left_child + right_child
-            left_child.insert(left_child.end(), right_child.begin(), right_child.end());
-            next_level.push_back(gaut_256bit_hasha(baitus_sujungt_po_4(std::move(left_child))));
+            next_level.push_back(hash_pair(left_child, right_child));
         }
 
         levels_.push_back(std::move(next_level));

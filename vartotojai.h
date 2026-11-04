@@ -3,6 +3,7 @@
 #include <string>
 #include <random>
 #include <map>
+#include <stdexcept>
 #include "konstantos.h"
 
 class User

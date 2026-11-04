@@ -5,11 +5,18 @@
 #include "blokai.h"
 #include "pagalb_fjos.h"
 
+// #define TEST_MODE
+
+#ifdef TEST_MODE
+#include "testavimas.h"
+#endif
+
 const int Seed = 123456789;
 
 int main()
 {
-    std::random_device rd;
+#ifndef TEST_MODE
+
     std::mt19937 generator(Seed); // rd() — sėkla, rd() grąžina pseudo-random unsigned int tiesiai iš kompo
 
     Users users(1000, 100, 1000000, generator);
@@ -204,6 +211,12 @@ int main()
         initial_money_supply,
         final_money_supply,
         total_duration);
+
+#else
+
+    run_merkle_tests();
+
+#endif
 
     return 0;
 }

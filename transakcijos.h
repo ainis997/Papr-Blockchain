@@ -25,22 +25,22 @@ public:
         transaction_id_ = get_tx_id(sender, receiver, amount, sequence);
     }
 
-    std::string sender()
+    std::string sender() const
     {
         return sender_;
     }
 
-    std::string receiver()
+    std::string receiver() const
     {
         return receiver_;
     }
 
-    Money amount()
+    Money amount() const
     {
         return amount_;
     }
 
-    std::size_t sequence()
+    std::size_t sequence() const
     {
         return sequence_;
     }
