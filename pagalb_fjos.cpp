@@ -38,6 +38,26 @@ Hash calc_tx_root(std::vector<Transaction> &txs)
     }
     return tx_root;
 }
+// RVALUE PARAMETRO PERDENGIMAS
+Hash calc_tx_root(std::vector<Transaction> &&txs)
+{
+    Hash tx_root;
+    std::vector<std::uint8_t> bytes; // surinksim visų transaction_id baitus (transaction_id — hashas)
+    for (Transaction &tx : txs)
+    {
+        Hash id = tx.transaction_id();
+        bytes.insert(bytes.end(), id.begin(), id.end());
+    }
+    if (bytes.empty()) // genesis blokui
+    {
+        tx_root = str_i_hasha(" ");
+    }
+    else
+    {
+        tx_root = gaut_256bit_hasha(baitus_sujungt_po_4(std::move(bytes)));
+    }
+    return tx_root;
+}
 
 // koleikas hardcoded trijų tikrinimas
 bool is_valid_hash(Hash hash) // dėl spartos netikrina ar hashas tinkamas — ar yra 32 baitų

@@ -31,7 +31,7 @@ int main()
             break;
 
         // atsirenkam iki 100 valid transakcijų
-        std::vector<Transaction> candidate_txs = mempool.collect_txs(100, balance_state, generator);
+        std::vector<Transaction> candidate_txs = mempool.collect_txs(MaxTxsInBlock, balance_state, generator);
 
         // kandidatinio bloko sukūrimas
         Hash prev_hash = blockchain.get_last_block_hash();

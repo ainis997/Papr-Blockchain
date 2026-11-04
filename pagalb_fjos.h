@@ -9,6 +9,8 @@
 std::string generate_random_string(const std::size_t length, const std::string &chars, std::mt19937 &generator);
 
 Hash calc_tx_root(std::vector<Transaction> &txs);
+// RVALUE PARAMETRO PERDENGIMAS
+Hash calc_tx_root(std::vector<Transaction> &&txs);
 
 bool is_valid_hash(Hash hash);
 

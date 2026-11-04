@@ -9,4 +9,5 @@ using Money = std::uint32_t;
 // KONSTANTOS
 
 constexpr std::uint32_t Version = 1;
-constexpr std::uint32_t Difficulty = 3; // pirmi 3 - nuliai
+constexpr std::uint32_t Difficulty = 3;    // pirmi 3 - nuliai
+constexpr std::size_t MaxTxsInBlock = 100; // max transakcijų skaičius bloke

@@ -65,9 +65,23 @@ Hash Blockchain::get_last_block_hash()
 
 bool Blockchain::is_block_valid(Block block, BalanceState balances) // nors tikrinimą darys ir mineris (prieš sukurdamas kandidatinį bloką), bet reik daryt ir galutinį pertikrinimą prieš patį pridėjimą
 {
-    // hasho validumas
+    // hasho (PoW) validumas
 
     if (!is_valid_hash(block.block_hash()))
+        return false;
+
+    // headeris
+
+    // prev_hash tikrinimas
+    if (block.prev_hash() != get_last_block_hash())
+        return false;
+
+    // tx_root tikrinimas
+    if (calc_tx_root(block.transactions()) != block.tx_root())
+        return false;
+
+    // transakcijų sk.
+    if (block.num_transactions() > MaxTxsInBlock) // 100
         return false;
 
     // pačios transakcijos
@@ -111,11 +125,6 @@ bool Blockchain::is_block_valid(Block block, BalanceState balances) // nors tikr
             return false;
         }
     }
-
-    // headeris
-
-    if (block.prev_hash() != get_last_block_hash())
-        return false;
 
     return true;
 }
