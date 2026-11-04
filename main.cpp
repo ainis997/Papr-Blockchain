@@ -111,6 +111,9 @@ int main()
             mining_budget = std::min(mining_budget * 2, MaxMiningBudget);
         }
 
+        // KANDIDATŲ INFO SUVESTINĖS PATEIKIMAS (bandymai, laikai, ar iškastas)
+        present_candidate_info(attempts, mining_durations, mined);
+
         // NUGALĖTOJO ATRANKA
 
         std::size_t winner_idx = NumCandidates; // toks idx negali būt naudojamas — toks idx liks tik jeigu nugalėtojo neradom

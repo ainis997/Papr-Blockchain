@@ -31,3 +31,5 @@ void present_overall_data(
     Money initial_money_supply,
     Money final_money_supply,
     double total_duration);
+
+void present_candidate_info(std::vector<std::size_t> &attempts, std::vector<double> &mining_durations, std::vector<bool> &mined);

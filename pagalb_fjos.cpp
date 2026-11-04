@@ -140,3 +140,15 @@ void present_overall_data(
               << std::setw(30) << "Final money supply: " << final_money_supply << '\n'
               << std::setw(30) << "Total duration: " << total_duration << '\n';
 }
+
+void present_candidate_info(std::vector<std::size_t> &attempts, std::vector<double> &mining_durations, std::vector<bool> &mined)
+{
+    std::cout << std::left << "\n\n"
+              << "Candidate blocks:\n"
+              << std::setw(15) << "Candidate" << std::setw(20) << "Mining attempts" << std::setw(20) << "Mining duration" << "Result\n";
+    // atspara — attempts vektorius, bet galėtų ir bilkuris būt, svarbu indeksai (visi vienodo ilgio turi būt)
+    for (std::size_t i = 0; i < attempts.size(); ++i)
+    {
+        std::cout << std::setw(15) << i + 1 << std::setw(20) << attempts.at(i) << std::setw(20) << mining_durations.at(i) << ((mined.at(i)) ? "mined" : "not mined") << "\n";
+    }
+}
