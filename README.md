@@ -59,6 +59,10 @@ Programos pradžioje sugeneruojama 10 000 transakcijų. Jų sumos generuojamos i
 
 Formuojant kandidatinį bloką iš telkinio atrenkama iki 100 validžių transakcijų. Sėkmingai priėmus bloką, jo transakcijos pašalinamos iš `Mempool`.
 
+Vienam bloko aukščiui sudaromi penki kandidatiniai blokai. Kiekvienam kandidatui transakcijos atrenkamos nepriklausomai, tikrinimui naudojant atskiras laikinų balansų būsenų kopijas. Visų kandidatų pradinė balansų būsena yra vienoda, atitinkanti tuo metu patvirtintą blokų grandinės būseną.
+
+Atrenkant transakcijas, jos tikrinamos ir vykdomos nurodyta tvarka laikinoje balansų būsenoje. Taip užtikrinama, kad viena transakcija negalėtų išleisti daugiau lėšų, nei liko po ankstesnių tame pačiame bloke esančių transakcijų.
+
 Pasibaigus programos darbui, atskirai išvedamos:
 
 - atmestos transakcijos (`rejected_txs`);
@@ -77,7 +81,13 @@ Bloko antraštę sudaro:
 - `nonce` – kasimo metu keičiamas skaitiklis;
 - `difficulty` – kasimo sudėtingumas.
 
-Bloko transakcijų sąrašą sudaro iš `Mempool` atrinktos validžios transakcijos. Bloko maiša apskaičiuojama naudojant jo antraštės duomenis.
+Bloko transakcijų sąrašą sudaro iš `Mempool` atrinktos validžios transakcijos.
+
+Bloke saugomos visos į jį įtrauktos transakcijos (`std::vector<Transaction>`). Merkle Tree sudaromas iš šių transakcijų ID, išlaikant jų tvarką bloke.
+
+Merkle Tree naudojamas bloko transakcijų šakninei maišai (`tx_root`) apskaičiuoti. Pats Merkle Tree bloke nesaugomas – saugoma tik jo šakninė maiša. Prireikus medis sudaromas iš naujo, pavyzdžiui, tikrinant bloko validumą.
+
+Viso bloko maiša apskaičiuojama naudojant jo antraštės duomenis.
 
 ### Blokų grandinė (`Blockchain`)
 
@@ -85,25 +95,37 @@ Bloko transakcijų sąrašą sudaro iš `Mempool` atrinktos validžios transakci
 
 Sukūrus `Blockchain` objektą, automatiškai sukuriamas pradinis genesis blokas. Kiti blokai susiejami su ankstesniais blokais, jų antraštėse nurodant ankstesnio bloko maišą.
 
-Kiekvienas iškastas kandidatinis blokas perduodamas `Blockchain` objektui per `append()` funkciją. Ji patikrina bloką ir prideda į blokų grandinę, jei blokas validus.
+Prieš įtraukiant bloką į grandinę, tikrinama:
 
-Jeigu blokas atmetamas, jo transakcijos nepašalinamos iš `Mempool`, o programa bando sudaryti kitą kandidatinį bloką.
+- Ar bloko ankstesnio bloko maiša (`prev_hash`) atitinka paskutinio grandinės bloko maišą.
+- Ar bloko versija ir transakcijų skaičius yra leistini.
+- Ar iš bloko transakcijų apskaičiuota Merkle šaknis sutampa su antraštėje nurodyta `tx_root`.
+- Ar bloko maiša atitinka nustatytą darbo įrodymo (`Proof of Work`) sudėtingumą.
+- Ar visos transakcijos yra validžios ir gali būti įvykdytos nurodyta tvarka.
+- Ar transakcijų ID dar nėra įtraukti į blokų grandinę ir nėra pasikartojančių transakcijų pačiame bloke.
 
-Priėmus bloką, pašalinamos į jį įtrauktos transakcijos iš telkinio ir atnaujinami atitinkamų vartotojų balansai.
+Bloko validavimas atliekamas naudojant laikiną balansų būseną. Tik sėkmingai patikrinus visą bloką, jis įtraukiamas į grandinę ir atnaujinami vartotojų balansai.
+
+Atmetus bloką, blokų grandinė, vartotojų balansai ir transakcijų telkinys nekeičiami.
 
 ### Kasimo procesas
 
-Kol `Mempool` lieka validžių transakcijų, atliekami šie veiksmai:
+Kiekvienam naujam blokui sudaromi penki kandidatiniai
+blokai, kurie varžosi dėl teisės būti įtraukti į blokų grandinę.
 
-1. Iš `Mempool` atrenkama iki 100 validžių transakcijų.
-2. Pagal paskutinio blokų grandinės bloko maišą sukuriamas naujas kandidatinis blokas.
-3. Pradedamas kasimo laiko matavimas.
-4. Keičiamas bloko `nonce` ir perskaičiuojama jo maiša, kol ji atitinka nustatytą sudėtingumo sąlygą.
-5. Iškastas blokas perduodamas `Blockchain` objektui patikrinti.
-6. Priėmus bloką, pašalinamos jo transakcijos iš `Mempool` ir atnaujinami vartotojų balansai.
-7. Konsolėje išvedami priimto bloko duomenys ir jo kasimo statistika.
+Kiekvienam bloko aukščiui atliekami šie veiksmai:
 
-Kiekvieno bloko kasimo metu atskirai matuojama trukmė ir skaičiuojamas bandymų, kurių prireikė tinkamai maišai rasti, skaičius.
+1. Užfiksuojama dabartinė blokų grandinės būsena ir paskutinio bloko maiša (`prev_hash`).
+2. Iš `Mempool` atrenkamos transakcijos ir sudaromi penki kandidatiniai blokai. Visi jie naudoja tos pačios pradinės balansų būsenos kopijas ir tą pačią ankstesnio bloko maišą.
+3. Kiekvienas kandidatas kasamas atskirai, keičiant jo `nonce` reikšmę ir ieškant maišos, atitinkančios PoW sudėtingumo reikalavimus.
+4. Kiekvienam kandidatui matuojamas kasimo laikas ir skaičiuojamas maišos skaičiavimo bandymų skaičius.
+5. Iš sėkmingai iškastų kandidatų išrenkamas nugalėtojas. Nugalėtoju laikomas greičiausiai iškastas kandidatas.
+6. Nugalėtojo blokas dar kartą validuojamas ir, jei yra validus, įtraukiamas į blokų grandinę.
+7. Pašalinamos nugalėtojo transakcijos iš `Mempool` ir atnaujinami vartotojų balansai.
+8. Pralaimėjusių kandidatų blokai atmetami, o jų transakcijos lieka `Mempool`.
+9. Konsolėje pateikiami priimto bloko duomenys ir visų penkių kandidatų kasimo rezultatai.
+
+Jeigu per nustatytą kasimo laiką (1 s) nė vienas kandidatas neiškasamas, padidinamas kasimo laiko biudžetas (ne daugiau nei iki 5 s) ir kandidatai bando toliau, tęsdami nuo jau išbandytų nonce reikšmių.
 
 ## 4. Maišos algoritmas ir darbo įrodymas
 
@@ -119,9 +141,39 @@ Maiša laikoma tinkama, kai atitinka `is_valid_hash()` funkcijoje nustatytą są
 
 ### Transakcijų šakninė maiša (`tx_root`)
 
-Transakcijų šakninė maiša sudaroma iš bendrai sujungtų transakcijų id maišos rezultato.
+Transakcijų šakninė maiša apskaičiuojama naudojant Merkle medžius.
 
-## 5. Atsitiktinių duomenų generavimas
+Merkle medžių lapai yra bloke esančių transakcijų ID maišos, išdėstytos tokia pačia tvarka kaip transakcijos bloke.
+
+Kiekvienas vidinis medžio mazgas apskaičiuojamas sujungiant kairiojo ir dešiniojo vaikų maišų baitus ir gautus duomenis paduodant į naudojamą maišos algoritmą. Jeigu tam tikrame medžio lygyje lieka neporuotas mazgas, jis suporuojamas su savo kopija.
+
+## 5. Testavimas
+
+Programoje atliekami Merkle Tree ir blokų bei transakcijų
+validavimo testai.
+
+### Merkle Tree testai
+
+Tikrinamas Merkle šaknies apskaičiavimo teisingumas, naudojant 1, 2, 3 ir 5 transakcijų ID.
+Taip pat tikrinama, ar Merkle šaknis pasikeičia:
+
+- pakeitus transakcijos turinį ir perskaičiavus jos ID;
+- pakeitus skirtingų transakcijų tvarką bloke.
+
+Testų rezultatai pateikiami konsolėje, nurodant, kurie
+testai sėkmingai įvykdyti, o kurie nepavyko:
+
+```
+[PASS] Merkle tree: 1 transaction
+[PASS] Merkle tree: 2 transactions
+[PASS] Merkle tree: 3 transactions
+[PASS] Merkle tree: 5 transactions
+[PASS] Transaction ID changes after content modification
+[PASS] Merkle root changes after content modification
+[PASS] Merkle root changes after transaction reordering
+```
+
+## 6. Atsitiktinių duomenų generavimas
 
 Vartotojų ir transakcijų generavimui naudojamas `std::mt19937` pseudoatsitiktinių skaičių generatorius.
 
@@ -133,27 +185,43 @@ const int Seed = 123456789;
 
 Naudojama sėklos reikšmė: **123456789**.
 
-Fiksuota sėkla leidžia pakartotinai generuoti tokią pačią pseudoatsitiktinių skaičių seką, todėl, esant tokiai pačiai programos logikai, galima atkartoti vartotojų ir transakcijų generavimą.
+Fiksuota sėkla leidžia pakartotinai generuoti tokią pačią pseudoatsitiktinių skaičių seką, todėl, esant tokiai pačiai programos logikai, galima atkartoti vartotojų ir transakcijų generavimą. Tačiau blokų kasimo trukmė ir pasirinkti nugalėtojai nebūtinai bus vienodi kiekvieno paleidimo metu, tam įtakos turi kompiuterio apkrova ir pan.
 
-## 6. Programos rezultatai
+## 7. Programos rezultatai
+
+### Kandidatinių blokų kasimo duomenys
+
+Kiekvienai į tą patį blokų grandinės aukštį pretenduojančių kandidatinių blokų grupei pateikiami jų kasimo duomenys.
+
+Pavyzdys:
+
+```
+Candidate blocks:
+Candidate      Mining attempts     Mining duration     Result
+1              1491                0.0327923           mined
+2              6830                0.151339            mined
+3              4623                0.102258            mined
+4              11116               0.247714            mined
+5              1495                0.032711            mined
+```
 
 ### Vieno priimto bloko pavyzdys
 
-Kiekvieną kartą sėkmingai iškasus ir priėmus bloką, konsolėje pateikiami jo duomenys ir kasimo statistika.
+Kiekvieną kartą priėmus bloką nugalėtoją, konsolėje pateikiami jo duomenys ir kasimo statistika.
 
 Pavyzdys:
 
 ```
 Accepted block:
-height:        104
-transactions:  94
-prev_hash:     000fdc9f954b76da67442380edc92237de5a5c95c3c713f1cff69cce8926254f
-tx_root:       7d00976435966962dbd202ee98e53e597f7f7187d7a739b3fa310cb6f04fcbc2
-hash:          000f5bf3d75bcce0c48fff77b438ac74587b4aae883df26f95c4dabadd64a978
+height:        103
+transactions:  96
+prev_hash:     000b6d4789cb03465c8bce72420075e4887ce2dea0139482ed7830784d632efe
+tx_root:       90e228984425450d0e71f011c04e9ac2e1b7bea4411042b55a76828f012fb19b
+hash:          00081ecb36bebe0f73bba6bd25bdb6ce8d29c599d994e410143abb8bda6ec15b
 difficulty:    3
-nonce:         5526
-attempts:      5527
-duration:      0.126055 s
+nonce:         1494
+attempts:      1495
+duration:      0.032711 s
 ```
 
 ### Atmestos ir likusios transakcijos
@@ -167,13 +235,13 @@ Programos pabaigoje pateikiama bendra statistika:
 ```text
 GENERAL STATS:
 Users:                        1000
-Blocks:                       108
-Accepted transactions:        9966
+Blocks:                       106
+Accepted transactions:        9962
 Rejected transactions:        0
-Remaining transactions:       34
+Remaining transactions:       38
 Initial money supply:         492482203
 Final money supply:           492482203
-Total duration:               130.676
+Total duration:               186.776
 ```
 
 Joje pateikiama:
@@ -189,16 +257,29 @@ Joje pateikiama:
 
 Kaip matyti, bendra pinigų suma nepakito.
 
-Visos likusios transakcijos nepridėtos dėl to, jog siuntėjas norėjo mokėti daugiau nei turi sąskaitoje pinigų.
+Pateiktame programos vykdymo pavyzdyje likusios transakcijos nebuvo įvykdytos, nes jų siuntėjų balansai buvo mažesni už reikalaujamas pervesti sumas.
 
 Pvz.:
 
 ```
-sender:                  User486
-sender balance:          7601
-receiver:                User498
-receiver balance:        142265
-amount:                  8768
-sequence:                8090
-id:                      9f069699740646c29a9b2a7630149fca4e3de8c4847b1a3dd0901d7511e3884b
+sender:                  User130
+sender balance:          2642
+receiver:                User275
+receiver balance:        511119
+amount:                  8860
+sequence:                9946
+id:                      556042e7ab2cf1482ac58d80feac0083da0b3a73484b7ee38e66ac2983527162
 ```
+
+## 8. Konkurencijos simuliacijos apribojimai
+
+Penkių kandidatinių blokų konkurencija šioje programoje imituoja tam tikrus blokų kasimo konkurencijos principus, tačiau nėra tikras lygiavertis peer-to-peer, P2P konsensuso mechanizmas.
+
+Pagrindiniai apribojimai:
+
+- Programa veikia viename kompiuteryje ir viename procese.
+- Visus penkis kandidatus sukuria ir kasa ta pati programa.
+- Kandidatai naudoja tą pačią pradinę blokų grandinės būseną ir tą pačią ankstesnio bloko maišą.
+- Nėra atskirų tinklo mazgų, kurie savarankiškai saugotų blokų grandinę ir siūlytų savo blokus.
+
+Todėl šiame darbe realizuota penkių kandidatinių blokų kasimo konkurencijos simuliacija, o ne decentralizuotas konsensusas tarp nepriklausomų tinklo mazgų.

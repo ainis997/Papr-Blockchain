@@ -64,6 +64,9 @@ Hash Blockchain::get_last_block_hash()
 
 bool Blockchain::is_block_valid(Block block, BalanceState balances) // nors tikrinimą darys ir mineris (prieš sukurdamas kandidatinį bloką), bet reik daryt ir galutinį pertikrinimą prieš patį pridėjimą
 {
+    // reiks po to dublikatų tikrinimui pačiam bloke
+    std::vector<Hash> tx_ids = extract_tx_ids(block.transactions());
+
     // hasho (PoW) validumas
 
     if (!is_valid_hash(block.block_hash()))
@@ -130,6 +133,9 @@ bool Blockchain::is_block_valid(Block block, BalanceState balances) // nors tikr
             return false;
         }
 
+        // transakcijos id bloke buvimas
+        if (std::count(tx_ids.begin(), tx_ids.end(), tx.transaction_id()) > 1)
+            return false;
         // transakcijos id blockchaine buvimas (kad išvengt dubliuotų transakcijų)
         if (confirmed_tx_ids_.contains(tx.transaction_id()))
             return false;

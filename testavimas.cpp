@@ -38,8 +38,23 @@ void test_merkle_tree_sizes()
     check_test("Merkle tree: 3 transactions",
                tree3.root() == expected3);
 
-    // 5 transakcijų – analogiškai apskaičiuojama
-    // tikėtina šaknis pagal reikalaujamą algoritmą.
+    // 5 transakcijos
+    MerkleTree tree5({ids[0], ids[1], ids[2], ids[3], ids[4]});
+
+    // Pirmasis lygis
+    Hash node1 = hash_pair(ids[0], ids[1]);
+    Hash node2 = hash_pair(ids[2], ids[3]);
+    Hash node3 = hash_pair(ids[4], ids[4]);
+
+    // Antrasis lygis
+    Hash node4 = hash_pair(node1, node2);
+    Hash node5 = hash_pair(node3, node3);
+
+    // Šaknis
+    Hash expected5 = hash_pair(node4, node5);
+
+    check_test("Merkle tree: 5 transactions",
+               tree5.root() == expected5);
 }
 
 void test_transaction_content_change()
