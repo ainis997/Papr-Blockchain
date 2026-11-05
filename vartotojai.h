@@ -63,9 +63,9 @@ public:
         return users_.at(i);
     }
 
-    User &get_user_by_pk(std::string pk);
+    User &get_user_by_pk(const std::string &pk);
 
-    User &get_user_by_name(std::string name);
+    User &get_user_by_name(const std::string &name);
 
     Money calc_money_supply();
 };

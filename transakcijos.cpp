@@ -32,6 +32,32 @@ void Transaction::print_data(Users &users) const // reikalinga nuoroda prie user
               << std::setw(25) << "id: " << to_hex(transaction_id_) << '\n';
 }
 
+// MEMPOOL
+
+bool Mempool::can_apply_tx(const Transaction &tx, BalanceState &balances)
+{
+    if (tx.transaction_id() !=
+        get_tx_id(tx.sender(), tx.receiver(), tx.amount(), tx.sequence()))
+        return false;
+
+    if (tx.sender() == tx.receiver() || tx.amount() == 0)
+        return false;
+
+    try
+    {
+        users_.get_user_by_pk(tx.sender());
+        users_.get_user_by_pk(tx.receiver());
+        balances.change_balance(tx.sender(), -static_cast<int>(tx.amount()));
+        balances.change_balance(tx.receiver(), static_cast<int>(tx.amount()));
+    }
+    catch (const std::runtime_error &)
+    {
+        return false;
+    }
+
+    return true;
+}
+
 Mempool::Mempool(Users &users, std::size_t num, Money min_amount, Money max_amount, std::mt19937 &generator) : users_(users)
 {
     mempool_.reserve(num);
@@ -100,105 +126,63 @@ Transaction Mempool::get_tx_by_id(Hash tx_id) // grąžina transakcijos KOPIJĄ
 std::vector<Transaction> Mempool::valid_txs_remaining(BalanceState balance_state)
 {
     std::vector<Transaction> valid_txs;
-    for (Transaction &tx : mempool_)
+    for (const Transaction &tx : mempool_)
     {
-        // transakcijos id tikrinimas
-        if (tx.transaction_id() != get_tx_id(tx.sender(), tx.receiver(), tx.amount(), tx.sequence()))
-            continue;
+        // // transakcijos id tikrinimas
+        // if (tx.transaction_id() != get_tx_id(tx.sender(), tx.receiver(), tx.amount(), tx.sequence()))
+        //     continue;
 
-        // siuntėjo ir gavėjo (ne)sutapimas
-        if (tx.sender() == tx.receiver())
-        {
-            continue;
-        }
-        // siuntėjo gavėjo egzistavimas
-        User sender_user;
-        User receiver_user;
-        try
-        {
-            // jeigu bus neegzistuojantis vartotojas, mes errorą
-            sender_user = users_.get_user_by_pk(tx.sender());
-            receiver_user = users_.get_user_by_pk(tx.receiver());
-        }
-        catch (std::runtime_error &e)
-        {
-            continue;
-        }
-        // transakcijos suma
-        if (tx.amount() == 0)
-        {
-            continue;
-        }
-        // siuntėjo būsimo balanso po transakcijos tikrinimas
-        try
-        {
-            balance_state.change_balance(tx.sender(), -static_cast<int>(tx.amount()));
-            balance_state.change_balance(tx.receiver(), static_cast<int>(tx.amount()));
-        }
-        catch (const std::runtime_error &e)
-        {
-            continue;
-        }
-        // jeigu validus
-        valid_txs.push_back(tx);
+        // // siuntėjo ir gavėjo (ne)sutapimas
+        // if (tx.sender() == tx.receiver())
+        // {
+        //     continue;
+        // }
+        // // siuntėjo gavėjo egzistavimas
+        // User sender_user;
+        // User receiver_user;
+        // try
+        // {
+        //     // jeigu bus neegzistuojantis vartotojas, mes errorą
+        //     sender_user = users_.get_user_by_pk(tx.sender());
+        //     receiver_user = users_.get_user_by_pk(tx.receiver());
+        // }
+        // catch (std::runtime_error &e)
+        // {
+        //     continue;
+        // }
+        // // transakcijos suma
+        // if (tx.amount() == 0)
+        // {
+        //     continue;
+        // }
+        // // siuntėjo būsimo balanso po transakcijos tikrinimas
+        // try
+        // {
+        //     balance_state.change_balance(tx.sender(), -static_cast<int>(tx.amount()));
+        //     balance_state.change_balance(tx.receiver(), static_cast<int>(tx.amount()));
+        // }
+        // catch (const std::runtime_error &e)
+        // {
+        //     continue;
+        // }
+
+        if (can_apply_tx(tx, balance_state)) // jeigu validi transakcija
+            valid_txs.push_back(tx);
     }
     return valid_txs;
 }
 
 std::size_t Mempool::num_valid_txs_remaining(BalanceState balance_state)
 {
-    return valid_txs_remaining(balance_state).size();
-}
+    std::size_t count = 0;
 
-std::vector<Transaction> Mempool::invalid_txs_remaining(BalanceState balance_state)
-{
-    std::vector<Transaction> invalid_txs;
-    for (Transaction &tx : mempool_)
+    for (const Transaction &tx : mempool_)
     {
-        // transakcijos id tikrinimas
-        if (tx.transaction_id() != get_tx_id(tx.sender(), tx.receiver(), tx.amount(), tx.sequence()))
-            invalid_txs.push_back(tx);
-        // siuntėjo ir gavėjo (ne)sutapimas
-        if (tx.sender() == tx.receiver())
-        {
-            invalid_txs.push_back(tx);
-        }
-        // siuntėjo gavėjo egzistavimas
-        User sender_user;
-        User receiver_user;
-        try
-        {
-            // jeigu bus neegzistuojantis vartotojas, mes errorą
-            sender_user = users_.get_user_by_pk(tx.sender());
-            receiver_user = users_.get_user_by_pk(tx.receiver());
-        }
-        catch (std::runtime_error &e)
-        {
-            invalid_txs.push_back(tx);
-        }
-        // transakcijos suma
-        if (tx.amount() == 0)
-        {
-            invalid_txs.push_back(tx);
-        }
-        // siuntėjo būsimo balanso po transakcijos tikrinimas
-        try
-        {
-            balance_state.change_balance(tx.sender(), -static_cast<int>(tx.amount()));
-            balance_state.change_balance(tx.receiver(), static_cast<int>(tx.amount()));
-        }
-        catch (const std::runtime_error &e)
-        {
-            invalid_txs.push_back(tx);
-        }
-        // jeigu validus — neinskaitom
+        if (can_apply_tx(tx, balance_state))
+            ++count;
     }
-    return invalid_txs;
-}
 
-std::size_t Mempool::num_invalid_txs_remaining(BalanceState balance_state)
-{
-    return invalid_txs_remaining(balance_state).size();
+    return count;
 }
 
 void Mempool::remove_tx(Hash tx_id)
@@ -217,26 +201,27 @@ void Mempool::remove_invalid_tx(Hash tx_id)
 
 std::vector<Transaction> Mempool::collect_txs(std::size_t max_n, BalanceState balances, std::mt19937 &generator)
 {
-    std::size_t min_n = static_cast<std::size_t>(0.9 * max_n); // įvairovei, kad ne visad pvz. 100
+    if (max_n == 0 || mempool_.empty())
+        return {};
+
+    const std::size_t min_n = static_cast<std::size_t>(0.9 * max_n); // įvairovei, kad ne visad pvz. 100
     std::uniform_int_distribution<std::size_t> n_dist(min_n, max_n);
-    std::size_t n = n_dist(generator); // kiek realiai bandysim įterpt transakcijų blokan
+    const std::size_t n = n_dist(generator); // kiek realiai bandysim įterpt transakcijų blokan
 
-    std::vector<Transaction> txs;
-    txs.reserve(n); // jeigu bus mažiau — po to reiks atpūst
+    std::vector<Transaction> txs; // pasirinktos txs
+    txs.reserve(std::min(n, mempool_.size()));
 
-    std::uniform_int_distribution<std::size_t> txs_idx_dist(0, mempool_.size() - 1);
-    std::vector<std::size_t> chosen_idxs;
-    std::vector<std::size_t> checked_idxs;
-    while (txs.size() < n && checked_idxs.size() != mempool_.size())
+    std::vector<std::size_t> shuffled_idxs;
+    shuffled_idxs.reserve(mempool_.size());
+
+    for (std::size_t i = 0; i < mempool_.size(); ++i)
+        shuffled_idxs.push_back(i);
+
+    std::shuffle(shuffled_idxs.begin(), shuffled_idxs.end(), generator);
+
+    for (const std::size_t idx : shuffled_idxs)
     {
-        std::size_t idx;
-        do
-        {
-            idx = txs_idx_dist(generator);
-        } while (std::find(checked_idxs.begin(), checked_idxs.end(), idx) != checked_idxs.end());
-
-        checked_idxs.push_back(idx);
-        Transaction tx = mempool_.at(idx);
+        const Transaction &tx = mempool_[idx];
 
         // transakcijos id tikrinimas
         if (tx.transaction_id() != get_tx_id(tx.sender(), tx.receiver(), tx.amount(), tx.sequence()))
@@ -279,10 +264,68 @@ std::vector<Transaction> Mempool::collect_txs(std::size_t max_n, BalanceState ba
 
         // jeigu abu tikrinimus praėjo, tai transakcija turi būt valid — pridėsma kandidatinian blokan
         txs.push_back(tx);
-        chosen_idxs.push_back(idx);
+
+        if (txs.size() == n)
+            break;
     }
-    // kandidat. blokui parinktų transakcijų iš mempoolo DAR NEŠALINAM; pašalinsim tik kai bus patvirtintas blokas (kad žinot ką šalint, surenkam pasirinktų transakcijų indeksų sąrašą)
-    // candidate_txs_idxs_.push_back(chosen_idxs);
+
+    return txs;
+
+    // std::uniform_int_distribution<std::size_t> txs_idx_dist(0, mempool_.size() - 1);
+    // std::vector<std::size_t> checked_idxs;
+    // while (txs.size() < n && checked_idxs.size() != mempool_.size())
+    // {
+    //     std::size_t idx;
+    //     do
+    //     {
+    //         idx = txs_idx_dist(generator);
+    //     } while (std::find(checked_idxs.begin(), checked_idxs.end(), idx) != checked_idxs.end());
+
+    //     checked_idxs.push_back(idx);
+    //     Transaction tx = mempool_.at(idx);
+
+    //     // transakcijos id tikrinimas
+    //     if (tx.transaction_id() != get_tx_id(tx.sender(), tx.receiver(), tx.amount(), tx.sequence()))
+    //     {
+    //         continue;
+    //     }
+    //     // siuntėjo ir gavėjo (ne)sutapimas
+    //     if (tx.sender() == tx.receiver())
+    //     {
+    //         continue;
+    //     }
+    //     // siuntėjo, gavėjo egzistavimo tikrinimas
+    //     User sender_user;
+    //     User receiver_user;
+    //     try
+    //     {
+    //         // jeigu bus neegzistuojantis vartotojas, mes errorą
+    //         sender_user = users_.get_user_by_pk(tx.sender());
+    //         receiver_user = users_.get_user_by_pk(tx.receiver());
+    //     }
+    //     catch (std::runtime_error &e)
+    //     {
+    //         continue;
+    //     }
+    //     // transakcijos suma
+    //     if (tx.amount() == 0)
+    //     {
+    //         continue;
+    //     }
+    //     // siuntėjo būsimo balanso po transakcijos tikrinimas
+    //     try
+    //     {
+    //         balances.change_balance(tx.sender(), -static_cast<int>(tx.amount()));
+    //         balances.change_balance(tx.receiver(), static_cast<int>(tx.amount()));
+    //     }
+    //     catch (const std::runtime_error &e)
+    //     {
+    //         continue;
+    //     }
+
+    //     // jeigu abu tikrinimus praėjo, tai transakcija turi būt valid — pridėsma kandidatinian blokan
+    //     txs.push_back(tx);
+    // }
 
     return txs;
 }

@@ -28,7 +28,7 @@ Users::Users(std::uint32_t num, Money min_balance, Money max_balance, std::mt199
     }
 }
 
-User &Users::get_user_by_pk(std::string pk)
+User &Users::get_user_by_pk(const std::string &pk)
 {
     auto it = std::find_if(users_.begin(), users_.end(), [pk](const User &user)
                            { return user.public_key() == pk; });
@@ -37,7 +37,7 @@ User &Users::get_user_by_pk(std::string pk)
     throw std::runtime_error("User with public key " + pk + " not found");
 }
 
-User &Users::get_user_by_name(std::string name)
+User &Users::get_user_by_name(const std::string &name)
 {
     auto it = std::find_if(users_.begin(), users_.end(), [name](const User &user)
                            { return user.name() == name; });

@@ -25,12 +25,12 @@ public:
         transaction_id_ = get_tx_id(sender, receiver, amount, sequence);
     }
 
-    std::string sender() const
+    const std::string &sender() const
     {
         return sender_;
     }
 
-    std::string receiver() const
+    const std::string &receiver() const
     {
         return receiver_;
     }
@@ -45,7 +45,7 @@ public:
         return sequence_;
     }
 
-    Hash transaction_id() const
+    const Hash &transaction_id() const
     {
         return transaction_id_;
     }
@@ -60,6 +60,9 @@ class Mempool
     std::vector<Transaction> mempool_;
     Users &users_;
     std::vector<Transaction> rejected_txs_; // rejected txs = removed invalid txs
+
+    // tikrina ar transakcija validi — naudosima tik klasės viduj
+    bool can_apply_tx(const Transaction &tx, BalanceState &balances);
 
 public:
     Mempool(Users &users) : users_(users) {};

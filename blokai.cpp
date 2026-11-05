@@ -24,7 +24,7 @@ BlockHeader::BlockHeader(
 
 //
 
-Hash Block::block_hash()
+Hash Block::block_hash() const
 {
     std::string prev_hash_str(header_.prev_hash_.begin(), header_.prev_hash_.end());
     std::string tx_root_str(header_.tx_root_.begin(), header_.tx_root_.end());
@@ -62,7 +62,7 @@ Hash Blockchain::get_last_block_hash()
     return chain_.at(chain_.size() - 1).block_hash(); // iškviečiam paskutinio blockchaino blokui .block_hash() metodą, kad gaut to bloko hashą
 }
 
-bool Blockchain::is_block_valid(Block block, BalanceState balances) // nors tikrinimą darys ir mineris (prieš sukurdamas kandidatinį bloką), bet reik daryt ir galutinį pertikrinimą prieš patį pridėjimą
+bool Blockchain::is_block_valid(const Block &block, BalanceState balances) // nors tikrinimą darys ir mineris (prieš sukurdamas kandidatinį bloką), bet reik daryt ir galutinį pertikrinimą prieš patį pridėjimą
 {
     // reiks po to dublikatų tikrinimui pačiam bloke
     std::vector<Hash> tx_ids = extract_tx_ids(block.transactions());
@@ -183,7 +183,7 @@ std::vector<Transaction> Blockchain::get_txs_by_user(std::string public_key)
     std::vector<Transaction> txs_by_user;
     for (Block &block : chain_)
     {
-        for (Transaction &tx : block.transactions())
+        for (const Transaction &tx : block.transactions())
         {
             if (tx.sender() == public_key)
             {

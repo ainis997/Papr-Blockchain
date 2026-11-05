@@ -72,7 +72,7 @@ int main()
             for (std::size_t i = 0; i < NumCandidates; ++i)
             {
                 // jei kandidatas jau iškastas arba jei jis tuščias — nekasam
-                if (mined.at(i) || candidates.at(i).transactions().empty())
+                if (mined.at(i) || candidates.at(i).num_transactions() == 0)
                     continue;
 
                 auto mining_start = std::chrono::steady_clock::now();

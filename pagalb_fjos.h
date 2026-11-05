@@ -16,7 +16,7 @@ Hash calc_tx_root(std::vector<Transaction> &&txs);
 
 Hash hash_pair(const Hash &l, const Hash &r);
 
-bool is_valid_hash(Hash hash);
+bool is_valid_hash(const Hash &hash);
 
 std::string to_hex(const std::vector<std::uint8_t> &baitai);
 std::string to_hex(std::vector<std::uint8_t> &&baitai);

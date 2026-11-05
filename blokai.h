@@ -37,57 +37,51 @@ class Block
 
 public:
     Block(Hash prev_hash, std::vector<Transaction> &&transactions)
-        : transactions_(transactions),
-          header_(
-              prev_hash,
-              std::time(0),
-              Version,
-              0,
-              Difficulty,
-              transactions) {}
+        : header_(prev_hash, std::time(0), Version, 0, Difficulty, transactions),
+          transactions_(std::move(transactions)) {}
     // transakcijos bus pertikrinamos pas blockchain prieš pridedant transakciją jan
 
-    Hash prev_hash()
+    Hash prev_hash() const
     {
         return header_.prev_hash_;
     }
 
-    std::uint64_t timestamp()
+    std::uint64_t timestamp() const
     {
         return header_.timestamp_;
     }
 
-    std::uint32_t version()
+    std::uint32_t version() const
     {
         return header_.version_;
     }
 
-    Hash tx_root()
+    Hash tx_root() const
     {
         return header_.tx_root_;
     }
 
-    std::uint64_t nonce()
+    std::uint64_t nonce() const
     {
         return header_.nonce_;
     }
 
-    std::uint32_t difficulty()
+    std::uint32_t difficulty() const
     {
         return header_.difficulty_;
     }
 
-    std::vector<Transaction> transactions()
+    const std::vector<Transaction> &transactions() const
     {
         return transactions_;
     }
 
-    std::size_t num_transactions()
+    std::size_t num_transactions() const
     {
         return transactions_.size();
     }
 
-    Hash block_hash();
+    Hash block_hash() const;
 
     void incr_nonce()
     {
@@ -121,9 +115,9 @@ public:
 
     Hash get_last_block_hash();
 
-    bool is_block_valid(Block block, BalanceState balances); // nors tikrinimą darys ir mineris (prieš sukurdamas kandidatinį bloką), bet reik daryt ir galutinį pertikrinimą prieš patį pridėjimą
+    bool is_block_valid(const Block &block, BalanceState balances); // nors tikrinimą darys ir mineris (prieš sukurdamas kandidatinį bloką), bet reik daryt ir galutinį pertikrinimą prieš patį pridėjimą
 
-    void append(Block block) // pridėt reikia tik validavus!
+    void append(const Block &block) // pridėt reikia tik validavus!
     {
         chain_.push_back(block);
 

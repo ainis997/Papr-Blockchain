@@ -84,7 +84,7 @@ Hash hash_pair(const Hash &l, const Hash &r)
 }
 
 // koleikas hardcoded trijų tikrinimas
-bool is_valid_hash(Hash hash) // dėl spartos netikrina ar hashas tinkamas — ar yra 32 baitų
+bool is_valid_hash(const Hash &hash) // dėl spartos netikrina ar hashas tinkamas — ar yra 32 baitų
 {
     return hash.size() >= 2 && hash[0] == 0x00 && (hash[1] & 0xF0) == 0x00; // hash[1] & 0xF0 tikrina ar antrojo baito (hash[1] svarbesnioji pusė lygi 0 === ar trečias hasho skaitmuo == 0)
 }

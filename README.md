@@ -6,19 +6,46 @@ Programa realizuoja supaprastintą blokų grandinės modelį (C++ programavimo k
 
 Programoje generuojami vartotojai ir jų pradiniai balansai, kuriamos transakcijos, iš jų formuojami kandidatiniai blokai, kurie kasami pagal _Proof of Work_ principus. Iškasti blokai po patikrinimo įtraukiami į blokų grandinę.
 
+### Versijų raida
+
+- **v0.1** – pradinė vieno proceso blokų grandinės realizacija, transakcijų tikrinimas ir Proof of Work.
+- **v0.2** – Merkle medis, išplėstas transakcijų ir blokų validavimas, penkių kandidatinių blokų konkurencijos simuliacija ir teisingumo testai.
+- **v0.3** – DI įrankiais atlikta kodo peržiūra ir pasirinkti patobulinimai. Pagrindinės tobulinimo kryptys:
+  - programos efektyvumas (didesnis greitis, mažesnės atminties sąnaudos);
+  - blokų grandinės sistemos testų plėtra (didesnė testų aprėptis).
+
 ## 2. Paleidimas
 
-### Paleidimas
+### Reikalavimai
 
-Paleidimo failas sukuriamas tokia komanda (nurodytas pvz. — naudojant g++ kompiliatorių):
+- C++20 palaikantis kompiliatorius (pvz., G++).
+- Standartinė C++ biblioteka.
 
-```
+### Įprastos programos kompiliavimas
+
+```bash
 g++ -std=c++20 main.cpp maisa.cpp pagalb_fjos.cpp blokai.cpp vartotojai.cpp transakcijos.cpp -o main
 ```
 
 <sub>Čia "main" — programos pavadinimas (gali būti bet koks).</sub>
 
+### Programos paleidimas
+
 Programa paleidžiama komanda `./main` (jeigu programos pavadinimas — main.exe).
+
+### Testų kompiliavimas ir paleidimas
+
+Norint kompiliuoti testus reikia main.cpp failo pradžioje pridėti preprocesoriaus komandą:
+
+```cpp
+#define TEST_MODE
+```
+
+```bash
+g++ -std=c++20 main.cpp maisa.cpp pagalb_fjos.cpp blokai.cpp vartotojai.cpp transakcijos.cpp testavimas.cpp -o test
+```
+
+Testas paleidžiamas komanda `./test` (jeigu testinės programos pavadinimas — test.exe).
 
 ## 3. Duomenų modelis ir programos struktūra
 
@@ -108,10 +135,13 @@ Bloko validavimas atliekamas naudojant laikiną balansų būseną. Tik sėkminga
 
 Atmetus bloką, blokų grandinė, vartotojų balansai ir transakcijų telkinys nekeičiami.
 
+Struktūriškai netinkamos transakcijos (pvz., su neteisingu ID, nežinomu dalyviu, nuline suma arba tuo pačiu siuntėju ir gavėju) pašalinamos iš `Mempool` (ir saugomos `rejected_txs`).
+
+Transakcijos, kurių siuntėjai tuo metu neturi pakankamai lėšų, gali likti `Mempool` ir būti tikrinamos vėliau, pasikeitus patvirtintai balansų būsenai. Jeigu tokių transakcijų siuntėjai galų gale negauna pakankamai lėšų joms įvykdyti, tokios transakcijos simuliacijos pabaigoje lieka `Mempool`, neįterptos į blokų grandinę.
+
 ### Kasimo procesas
 
-Kiekvienam naujam blokui sudaromi penki kandidatiniai
-blokai, kurie varžosi dėl teisės būti įtraukti į blokų grandinę.
+Kiekvienam naujam blokui sudaromi penki kandidatiniai blokai, kurie varžosi dėl teisės būti įtraukti į blokų grandinę.
 
 Kiekvienam bloko aukščiui atliekami šie veiksmai:
 
@@ -149,41 +179,57 @@ Kiekvienas vidinis medžio mazgas apskaičiuojamas sujungiant kairiojo ir dešin
 
 ## 5. Testavimas
 
-Programoje atliekami Merkle Tree ir blokų bei transakcijų
-validavimo testai.
+### Blokų grandinės ir transakcijų validavimo testai
 
-### Merkle Tree testai
+| Testavimo scenarijus                            | Tikrinama savybė                                          |
+| ----------------------------------------------- | --------------------------------------------------------- |
+| Galiojantis mokėjimas                           | Balansai atnaujinami teisingai, bendra lėšų suma nekinta. |
+| Paskutinis blokas su mažiau nei 100 transakcijų | Leidžiama priimti nepilną bloką.                          |
+| Nežinomas gavėjas                               | Transakcija atmetama.                                     |
+| Nulinė suma                                     | Transakcija atmetama.                                     |
+| Neigiamą sumą turinti įvestis                   | Atmetama prieš konvertuojant į `Money` [jei realizuota].  |
+| Netinkamas transakcijos ID                      | Transakcija atmetama.                                     |
+| Du mokėjimai viršija siuntėjo balansą           | Visas negaliojantis kandidatas atmetamas.                 |
+| Pasikartojantis ID bloke                        | Blokas atmetamas.                                         |
+| Pakartotinai įtraukiama patvirtinta transakcija | Pakartotinis įtraukimas atmetamas.                        |
+| Neteisingas `prev_hash`                         | Blokas atmetamas.                                         |
+| Neteisingas Proof of Work                       | Blokas atmetamas.                                         |
+| Pakeistas bloko turinys                         | Blokas atmetamas dėl neteisingos Merkle šaknies.          |
+| Nelaimėjęs kandidatas                           | Jo transakcijos nepakeičia patvirtintų balansų.           |
 
-Tikrinamas Merkle šaknies apskaičiavimo teisingumas, naudojant 1, 2, 3 ir 5 transakcijų ID.
-Taip pat tikrinama, ar Merkle šaknis pasikeičia:
+Testai vykdomi su deterministine pradine vartotojų būsena, kad rezultatai nepriklausytų nuo atsitiktinai sugeneruotų vartotojų balansų.
 
-- pakeitus transakcijos turinį ir perskaičiavus jos ID;
-- pakeitus skirtingų transakcijų tvarką bloke.
-
-Testų rezultatai pateikiami konsolėje, nurodant, kurie
-testai sėkmingai įvykdyti, o kurie nepavyko:
+Testuojant tiek v0.3, tiek v0.2 klaidų nerasta:
 
 ```
-[PASS] Merkle tree: 1 transaction
-[PASS] Merkle tree: 2 transactions
-[PASS] Merkle tree: 3 transactions
-[PASS] Merkle tree: 5 transactions
-[PASS] Transaction ID changes after content modification
-[PASS] Merkle root changes after content modification
-[PASS] Merkle root changes after transaction reordering
+=== TEST SUMMARY ===
+Passed: 74
+Failed: 0
 ```
 
 ## 6. Atsitiktinių duomenų generavimas
 
-Vartotojų ir transakcijų generavimui naudojamas `std::mt19937` pseudoatsitiktinių skaičių generatorius.
+### Atkuriamumo parametrai
 
-Generatorius inicializuojamas fiksuota sėkla:
+| Parametras                              | Reikšmė                |
+| --------------------------------------- | ---------------------- |
+| Pseudoatsitiktinių skaičių generatorius | `std::mt19937`         |
+| Seed                                    | `123456789`            |
+| Vartotojų skaičius                      | 1 000                  |
+| Pradinio balanso intervalas             | 100–1 000 000          |
+| Transakcijų skaičius                    | 10 000                 |
+| Transakcijų sumų intervalas             | 10–10 000              |
+| Kandidatų skaičius                      | 5                      |
+| Maksimalus transakcijų skaičius bloke   | 100                    |
+| Proof of Work sudėtingumas              | 3 pradiniai hex nuliai |
+| Pradinis kasimo biudžetas               | 1 s kandidatui         |
+| Maksimalus kasimo biudžetas             | 5 s kandidatui         |
 
-```cpp
-const int Seed = 123456789;
-```
+Papildomi programos atkuriamumo parametrai:
 
-Naudojama sėklos reikšmė: **123456789**.
+- Operacinė sistema: Windows 11.
+- Kompiliatorius: g++.
+- C++ standartas: C++20.
 
 Fiksuota sėkla leidžia pakartotinai generuoti tokią pačią pseudoatsitiktinių skaičių seką, todėl, esant tokiai pačiai programos logikai, galima atkartoti vartotojų ir transakcijų generavimą. Tačiau blokų kasimo trukmė ir pasirinkti nugalėtojai nebūtinai bus vienodi kiekvieno paleidimo metu, tam įtakos turi kompiuterio apkrova ir pan.
 
@@ -230,7 +276,20 @@ Pasibaigus kasimo procesui, atskirai išvedamos atmestos ir `Mempool` likusios t
 
 ### Galutinė statistika
 
-Programos pabaigoje pateikiama bendra statistika:
+Programos pabaigoje pateikiama bendra statistika.
+
+Joje pateikiama:
+
+- vartotojų skaičius;
+- priimtų blokų skaičius;
+- į blokų grandinę įtrauktų transakcijų skaičius;
+- pašalintų netinkamų transakcijų skaičius;
+- `Mempool` likusių transakcijų skaičius;
+- pradinis bendras lėšų kiekis;
+- galutinis bendras lėšų kiekis;
+- bendras programos vykdymo laikas.
+
+#### v0.2
 
 ```text
 GENERAL STATS:
@@ -244,16 +303,21 @@ Final money supply:           492482203
 Total duration:               186.776
 ```
 
-Joje pateikiama:
+#### v0.3
 
-- vartotojų skaičius;
-- priimtų blokų skaičius;
-- į blokų grandinę įtrauktų transakcijų skaičius;
-- pašalintų netinkamų transakcijų skaičius;
-- `Mempool` likusių transakcijų skaičius;
-- pradinis bendras lėšų kiekis;
-- galutinis bendras lėšų kiekis;
-- bendras programos vykdymo laikas.
+```text
+GENERAL STATS:
+Users:                        1000
+Blocks:                       107
+Accepted transactions:        9961
+Rejected transactions:        0
+Remaining transactions:       39
+Initial money supply:         492482203
+Final money supply:           492482203
+Total duration:               182.244
+```
+
+#### Bendros statistikos įžvalgos
 
 Kaip matyti, bendra pinigų suma nepakito.
 
@@ -283,3 +347,132 @@ Pagrindiniai apribojimai:
 - Nėra atskirų tinklo mazgų, kurie savarankiškai saugotų blokų grandinę ir siūlytų savo blokus.
 
 Todėl šiame darbe realizuota penkių kandidatinių blokų kasimo konkurencijos simuliacija, o ne decentralizuotas konsensusas tarp nepriklausomų tinklo mazgų.
+
+## 9. v0.2 ir v0.3 palyginimas
+
+### Pakeitimai
+
+v0.3 versijoje atlikti šie patobulinimai:
+
+- Padidinta testų aprėptis (apima daug blokų grandinės sistemos dalių);
+- Minimaliai pagerintas programos greitis.
+
+### Teisingumo testų palyginimas
+
+Abi versijos ištestuotos naudojant tą patį testų rinkinį:
+
+```
+=== MERKLE TREE TESTS ===
+[PASS] Merkle tree: 1 transaction
+[PASS] Merkle tree: 2 transactions
+[PASS] Merkle tree: 3 transactions
+[PASS] Merkle tree: 5 transactions
+[PASS] Transaction ID changes after content modification
+[PASS] Merkle root changes after content modification
+[PASS] Merkle root changes after transaction reordering
+
+=== BLOCKCHAIN VALIDATION TESTS ===
+[PASS] Valid payment: added to Mempool
+[PASS] Valid payment: block mined
+[PASS] Valid payment: block passes validation
+[PASS] Valid payment: sender balance is 70
+[PASS] Valid payment: receiver balance is 130
+[PASS] Valid payment: unrelated balance unchanged
+[PASS] Valid payment: money supply unchanged
+[PASS] Valid payment: transaction included exactly once
+[PASS] Valid payment: transaction removed from Mempool
+[PASS] Valid payment: chain height increased
+[PASS] Unknown receiver: added to Mempool
+[PASS] Unknown receiver: block mined
+[PASS] Unknown receiver: block rejected
+[PASS] Unknown receiver: transaction recorded as rejected
+[PASS] Unknown receiver: chain unchanged
+[PASS] Unknown receiver: balances and money supply unchanged
+[PASS] Zero amount: added to Mempool
+[PASS] Zero amount: block mined
+[PASS] Zero amount: block rejected
+[PASS] Zero amount: transaction recorded as rejected
+[PASS] Zero amount: chain unchanged
+[PASS] Zero amount: balances and supply unchanged
+[PASS] Self-payment: added to Mempool
+[PASS] Self-payment: block mined
+[PASS] Self-payment: block rejected
+[PASS] Self-payment: transaction recorded as rejected
+[PASS] Self-payment: balances unchanged
+[PASS] Invalid transaction ID: block mined
+[PASS] Invalid transaction ID: block rejected
+[PASS] Invalid transaction ID: transaction recorded as rejected
+[PASS] Invalid transaction ID: removed from Mempool
+[PASS] Invalid transaction ID: chain unchanged
+[PASS] Invalid transaction ID: balances unchanged
+[PASS] Overspending: block mined
+[PASS] Overspending: whole block rejected
+[PASS] Overspending: original BalanceState unchanged
+[PASS] Overspending: real balances and chain unchanged
+[PASS] Duplicate ID in block: block mined
+[PASS] Duplicate ID in block: block rejected
+[PASS] Duplicate ID in block: no transaction committed
+[PASS] Replay: transaction added to Mempool
+[PASS] Replay: original transaction accepted
+[PASS] Replay: second block mined
+[PASS] Replay: already confirmed transaction rejected
+[PASS] Replay: no second block or transaction added
+[PASS] Replay: balances not changed for a second time
+[PASS] Wrong prev_hash: block has valid PoW
+[PASS] Wrong prev_hash: block rejected
+[PASS] Wrong prev_hash: chain unchanged
+[PASS] Invalid PoW: found nonce that fails difficulty
+[PASS] Invalid PoW: block rejected
+[PASS] Invalid PoW: chain unchanged
+[PASS] Modified block content: original block mined
+[PASS] Modified block content: block rejected
+[PASS] Modified block content: chain unchanged
+[PASS] Modified block content: balances unchanged
+[PASS] Wrong version: block mined
+[PASS] Wrong version: block rejected
+[PASS] Wrong difficulty: block mined
+[PASS] Wrong difficulty: block rejected
+[PASS] Candidate isolation: both transactions added
+[PASS] Candidate isolation: both candidates mined
+[PASS] Candidate isolation: both valid from same initial state
+[PASS] Candidate isolation: original BalanceState unchanged
+[PASS] Candidate isolation: only winner included
+[PASS] Candidate isolation: losing transaction remains in Mempool
+[PASS] Candidate isolation: losing candidate did not change balances
+
+=== TEST SUMMARY ===
+Passed: 74
+Failed: 0
+```
+
+### Našumo palyginimas
+
+Našumo palyginimas atliktas naudojant tą pačią aparatinę įrangą, kompiliatorių, kompiliavimo parinktis, maišos algoritmo versiją, pradinius duomenis ir Proof of Work sudėtingumą.
+
+Kiekvienas bandymas pakartotas penkis kartus.
+
+Visų matavimų rezultatai pateikiami atskirai:
+
+| Bandymas   | v0.2 laikas | v0.3 laikas |
+| ---------- | ----------: | ----------: |
+| 1          |   188,822 s |   182,244 s |
+| 2          |   187,345 s |   181,983 s |
+| 3          |   184,493 s |   182,482 s |
+| 4          |   190,783 s |   177,577 s |
+| 5          |   183,894 s |   183,266 s |
+| Vidurkis   |  187,0674 s |  181,5104 s |
+| Mininumas  |   183,894 s |   177,577 s |
+| Maksimumas |   190,783 s |   183,266 s |
+
+### Išvados
+
+Po DI patobulinimų v0.3 versijoje programa tapo šiek tiek greitesnė (visa simuliacija pagreitėjo vidutiniškai apie 6 sekundėmis), tačiau skirtumas neženklus.
+
+## 10. DI naudojimas
+
+Kuriant ir tobulinant projektą buvo dalinai naudoti DI įrankiai (ChatGPT — GPT-6):
+
+- parašyto kodo peržiūrai, klaidų paieškai;
+- testų projektavimui (v0.3);
+- optimizavimo pasiūlymų vertinimui (v0.3);
+- dokumentacijos (README.md) formavimui.
