@@ -44,6 +44,8 @@ class Users
 public:
     Users() = default;
 
+    Users(std::vector<User> users) : users_(users) {}
+
     Users(std::uint32_t num, Money min_balance, Money max_balance, std::mt19937 &generator); // sugeneruot num userių
 
     std::vector<User> users()

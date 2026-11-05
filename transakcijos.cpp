@@ -6,7 +6,7 @@
 #include "transakcijos.h"
 #include "pagalb_fjos.h"
 
-Hash get_tx_id(std::string &sender, std::string &receiver, Money amount, std::size_t sequence)
+Hash get_tx_id(const std::string &sender, const std::string &receiver, const Money amount, const std::size_t sequence)
 {
     return str_i_hasha(sender + "|" + receiver + "|" + std::to_string(amount) + "|" + std::to_string(sequence));
 }

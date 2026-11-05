@@ -4,7 +4,7 @@
 #include "vartotojai.h"
 #include "konstantos.h"
 
-Hash get_tx_id(std::string &sender, std::string &receiver, Money amount, std::size_t sequence);
+Hash get_tx_id(const std::string &sender, const std::string &receiver, const Money amount, const std::size_t sequence);
 Hash get_tx_id(std::string &&sender, std::string &&receiver, Money amount, std::size_t sequence);
 
 class Transaction
@@ -51,6 +51,8 @@ public:
     }
 
     void print_data(Users &users) const;
+
+    friend struct TransactionTestAccess;
 };
 
 class Mempool
@@ -102,6 +104,8 @@ public:
     void remove_invalid_tx(Hash tx_id);
 
     std::vector<Transaction> collect_txs(std::size_t max_n, BalanceState balances, std::mt19937 &generator);
+
+    friend struct MempoolTestAccess;
 };
 
 class MerkleTree

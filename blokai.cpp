@@ -86,6 +86,12 @@ bool Blockchain::is_block_valid(Block block, BalanceState balances) // nors tikr
     if (block.num_transactions() > MaxTxsInBlock) // 100
         return false;
 
+    if (block.difficulty() != Difficulty)
+        return false;
+
+    if (block.version() != Version)
+        return false;
+
     // pačios transakcijos
 
     for (auto &tx : block.transactions())

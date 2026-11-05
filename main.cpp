@@ -5,7 +5,7 @@
 #include "blokai.h"
 #include "pagalb_fjos.h"
 
-// #define TEST_MODE
+#define TEST_MODE
 
 #ifdef TEST_MODE
 #include "testavimas.h"
@@ -215,11 +215,11 @@ int main()
         final_money_supply,
         total_duration);
 
+    return 0;
+
 #else
 
-    run_merkle_tests();
+    return run_all_tests();
 
 #endif
-
-    return 0;
 }

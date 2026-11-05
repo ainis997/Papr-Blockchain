@@ -30,7 +30,7 @@ std::vector<Hash> extract_tx_ids(const std::vector<Transaction> &txs)
     return ids;
 }
 
-Hash calc_tx_root(std::vector<Transaction> &txs)
+Hash calc_tx_root(const std::vector<Transaction> &txs)
 {
     auto tx_ids = extract_tx_ids(txs);
     MerkleTree tx_mt(tx_ids);
@@ -76,7 +76,7 @@ Hash calc_tx_root(std::vector<Transaction> &&txs)
     // return tx_root;
 }
 
-Hash hash_pair(Hash &l, Hash &r)
+Hash hash_pair(const Hash &l, const Hash &r)
 {
     Hash l_copy = l; // kad neparedaguot ir nepamove'int l nurodomojo objekto
     l_copy.insert(l_copy.end(), r.begin(), r.end());

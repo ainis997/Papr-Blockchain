@@ -95,6 +95,8 @@ public:
     }
 
     void print_txs(Users &users) const;
+
+    friend struct BlockTestAccess;
 };
 
 class Blockchain
